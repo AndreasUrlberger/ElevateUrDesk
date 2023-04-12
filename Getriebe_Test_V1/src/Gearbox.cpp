@@ -1,7 +1,7 @@
 #include "Gearbox.hpp"
 #include "DeskMotor.hpp"
 
-void Gearbox::Start()
+void Gearbox::setup()
 {
     lightgate.CheckClosed();
     // Motorsteuerung aktivieren
@@ -13,28 +13,33 @@ void Gearbox::Start()
     Serial.printf("Gearbox %s ready\n", name);
 }
 
-void Gearbox::Run(int currentPosition, int requestedPosition, int stepDeviation)
+void Gearbox::run(int currentPosition, int requestedPosition, int stepDeviation)
 {
     // compute new speed
     // TODO: entkommentieren
-    // int newSpeed = ComputeNewSpeed(stepDeviation, currentSpeed);
+    // int newSpeed = computeNewSpeed(stepDeviation, currentSpeed);
 
     // handle request
     // compute steps:
-    //  targetPosition = current step count + steps that can be made in xx ms
-    //  check for direction of movement
-    //  if targetPosition > requestedPosition, targetPosition = requestedPosition
-    //  if targetPosition > maxSteps, targetPosition = maxSteps
-    //  if targetPosition < minSteps, targetPosition = minSteps
+    //  targetPosition = computeTargetPosition(stepDeviation, newSpeed);
+
     // after targetPosition is reached, skipped steps are read from motor controller, and added to targetPosition (repeat until targetPosition is reached)
     // then, motor is stopped by ("stepper::stop()") if no new request was made
     // if new request was made, restart run() with new targetPosition
     int targetPosition = currentPosition;
-    // for steps to go:
     // TODO: entkommentieren
     // DeskMotor::run(targetPosition, newSpeed);
 }
-void Gearbox::Stop()
+
+void Gearbox::standby()
+{
+    // DeskMotor und Motorsteuerung aktiv lassen
+    // Bremsen geöffnet lassen
+    // nach 2s (?) ohne weitere Befehle, Gearbox.Stop() ausführen
+    Serial.printf("Gearbox %s in Standby, will shutdown in 2s\n", name);
+}
+
+void Gearbox::stop()
 {
     brake.closePrimaryBrake();
     brake.closeSecondaryBrake();
@@ -45,15 +50,7 @@ void Gearbox::Stop()
     Serial.printf("Gearbox %s finished\n", name);
 }
 
-void Gearbox::Standby()
-{
-    // DeskMotor und Motorsteuerung aktiv lassen
-    // Bremsen geöffnet lassen
-    // nach 2s (?) ohne weitere Befehle, Gearbox.Stop() ausführen
-    Serial.printf("Gearbox %s in Standby, will shutdown in 2s\n", name);
-}
-
-void Gearbox::Status()
+void Gearbox::status()
 {
     // ausgelesene und rechnerische Höhe ausgeben
     // aktuelle Schrittzahl ausgebenar
@@ -61,7 +58,7 @@ void Gearbox::Status()
     Serial.printf("Sensor height: %s, DeskMotor height: %s\n", sensorHeight, mathematicalHeight); // gibt Sensorhöhe (von Rotationssensor umgerechnet) und mathematische Höhe (Summe der Motorschritte) aus
 }
 
-void Gearbox::PowerLoss()
+void Gearbox::powerLoss()
 {
     brake.closePrimaryBrake();
     brake.closeSecondaryBrake();
@@ -88,7 +85,7 @@ std::string Gearbox::nameOfState(GearboxState state)
     return "ERROR";
 }
 
-int Gearbox::ComputeNewSpeed(int stepDeviation, int currentSpeed)
+int Gearbox::computeNewSpeed(int stepDeviation, int currentSpeed)
 {
     int newSpeed;
     /* compute new speed
@@ -96,6 +93,8 @@ int Gearbox::ComputeNewSpeed(int stepDeviation, int currentSpeed)
     stepDeviation is the difference between motor 1 (this one) and 2, negative if motor 1 is behind motor 2
       action should only be taken if difference is positive
       if difference is negative, motor 2 should be slowed down, as speeding up motor 1 could cause it to skip steps
+
+      TODO: check if it also works in opposite direction (motor should also slow down while going down)
     */
     if (stepDeviation > 0)
     {
@@ -106,7 +105,7 @@ int Gearbox::ComputeNewSpeed(int stepDeviation, int currentSpeed)
         {
             newSpeed = 0;
         }
-        if (DebugMode == true)
+        if (debugMode)
         {
             Serial.printf("New speed: %d\n", newSpeed);
         }
@@ -119,6 +118,19 @@ int Gearbox::ComputeNewSpeed(int stepDeviation, int currentSpeed)
     return newSpeed;
 }
 
+int Gearbox::computeTargetPosition(int stepDeviation, int currentSpeed)
+{
+    int targetPosition;
+    // compute target position
+    // targetPosition = current step count + steps that can be made in xx ms
+    // check for direction of movement
+    // if targetPosition > requestedPosition, targetPosition = requestedPosition
+    // if targetPosition > maxSteps, targetPosition = maxSteps
+    // if targetPosition < minSteps, targetPosition = minSteps
+
+    return targetPosition;
+}
+
 Gearbox::Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight)
 {
     name = gearboxName;
@@ -128,4 +140,36 @@ Gearbox::Gearbox(std::string gearboxName, float sensorHeight, float mathematical
 
 Gearbox::~Gearbox()
 {
+}
+
+void Gearbox::startMotor()
+{
+    deskMotor.start();
+}
+
+void Gearbox::stopMotor()
+{
+    deskMotor.stop();
+}
+
+void Gearbox::updateMotorSpeed(int speed)
+{
+    deskMotor.setMaxSpeed(speed);
+}
+
+void Gearbox::moveUp()
+{
+    // Calculate target position based on current position and speed.
+    // Set target position.
+}
+
+void Gearbox::moveDown()
+{
+    // Calculate target position based on current position and speed.
+    // Set target position.
+}
+
+void Gearbox::moveToPosition(long targetPosition)
+{
+    deskMotor.setNewTargetPosition(targetPosition);
 }

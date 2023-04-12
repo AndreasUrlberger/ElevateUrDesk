@@ -5,12 +5,11 @@
 class DebugControls
 {
 private:
-    /* data */
-public:
     // Do not allow construction of this class
-    DebugControls(/* args */);
-    ~DebugControls();
+    DebugControls() = delete;
+    ~DebugControls() = delete;
 
+public:
     static void handleDebugMode(int debugFeature);
     static void I2Cdebug();
 };

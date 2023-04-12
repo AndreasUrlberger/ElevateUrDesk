@@ -1,5 +1,7 @@
 #include "TextInput.hpp"
 
+char TextInput::receivedChars[numChars];
+
 int TextInput::recvWithEndMarker()
 {
   byte ndx = 0;

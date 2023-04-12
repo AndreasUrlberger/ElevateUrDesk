@@ -29,7 +29,6 @@
 //  I2C?
 
 // other variables
-static bool GearboxRun = false;
 static bool DebugMode = true;
 
-static u_int8_t SoftwareVersion[3]{0x01, 0x00, 0x00}; // Major Version, Minor Version, BugFix
+static uint8_t SoftwareVersion[3]{0x01, 0x00, 0x00}; // Major Version, Minor Version, BugFix

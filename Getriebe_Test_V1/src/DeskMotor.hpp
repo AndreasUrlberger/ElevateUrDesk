@@ -1,33 +1,42 @@
 #pragma once
 
 #include <Arduino.h>
-#include <AccelStepper.h>
 #include "Pinout.hpp"
+#include <AccelStepper.h>
+#include <atomic>
 
 class DeskMotor
 {
 private:
-    /* data */
-    AccelStepper deskMotor{AccelStepper::DRIVER, MotorStep, MotorDir};
-    float maxSpeed = 500;        // max speed of main motor
-    float maxAcceleration = 100; // max acceleration of main motor
+    AccelStepper deskMotor{AccelStepper::HALF4WIRE, PrimaryBrake1, PrimaryBrake3, PrimaryBrake2, PrimaryBrake4}; // TODO: disable when debugging is done
+    float maxSpeed{500.f};                                                                                       // max speed of main motor
+    float maxAcceleration{100.f};
+    long targetPosition = 0; // current target position of the motor
+    bool isRunning{false};
+    std::atomic_int skippedSteps{0};
+
+    int getMissingSteps();
+    long skippedStepsUpdateIntervalMS{10};
+    long moveInputIntervalMS{10};
 
 public:
     DeskMotor(const float maxSpeed, const float maxAcceleration);
     ~DeskMotor();
 
     void setup();
-    void run(const int targetPosition, const int newSpeed);
-    void getSkippedSteps();
-
+    void run(const int newSpeed);
     void setMaxSpeed(const float newSpeed);
     void setMaxAcceleration(const float newAcceleration);
+    long getCurrentPosition();
+    void setNewTargetPosition(const long newTargetPosition);
+    void addToTargetPosition(const long stepsToAdd);
+
+    void start();
+    void stop();
+
+    void updateMotorSpeed(const int speed);
+    void addSkippedSteps(const int stepsToAdd);
+
+    void DeskMotor::moveUp();
+    void DeskMotor::moveDown();
 };
-
-DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
-{
-}
-
-DeskMotor::~DeskMotor()
-{
-}

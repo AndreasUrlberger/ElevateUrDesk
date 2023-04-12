@@ -10,6 +10,8 @@
 
 void receiveEvent(int numBytes);
 void requestEvent();
+void task2Code(void *parameter);
+void startTask2();
 
 int timerMs = 5000; // Number of milliseconds the gearbox waits until stopping
 
@@ -17,13 +19,23 @@ u_int8_t requestString[32]{};
 u_int8_t replyString[32]{};
 
 hw_timer_t *timer = NULL;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+static constexpr const char *const gearboxName = "left";
+static constexpr float gearboxSensorHeight = 0.0f;
+static constexpr float gearboxMathematicalHeight = 0.0f;
+
+TaskHandle_t task2Handle;
+Communication communication{gearboxName, gearboxSensorHeight, gearboxMathematicalHeight};
+
+// only for debug purposes, TODO: remove later
+ICACHE_RAM_ATTR void buttonPress()
+{
+  DebugControls::debugButton1Press();
+}
 
 void IRAM_ATTR onTimer()
 {
-  portENTER_CRITICAL_ISR(&timerMux);
-  GearboxRun = false;
-  portEXIT_CRITICAL_ISR(&timerMux);
+  communication.emergencyStop();
 }
 
 void setup()
@@ -43,7 +55,9 @@ void setup()
 
   Wire.begin(GearboxAddress);
 
+  // Get data from master, does not send anything back.
   Wire.onReceive(receiveEvent);
+  // Send data to master, does not receive anything.
   Wire.onRequest(requestEvent);
   Serial.begin(115200);
 
@@ -51,28 +65,37 @@ void setup()
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, timerMs * 1000, true);
   timerAlarmEnable(timer);
+
+  if (debugMode)
+  {
+    pinMode(DebugButton1, INPUT_PULLUP); // set the digital pin as output
+    attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, FALLING);
+  }
+
+  DebugControls::initDebugControls(&communication);
+
+  startTask2();
+}
+
+void task2Setup()
+{
+  const int speed = 1000; // TODO set real value
+  DeskMotor *const deskMotor = gearbox.getDeskMotor();
+  deskMotor->run(speed);
+}
+
+void task2Loop()
+{
+  delay(1); // "Power Saving"
 }
 
 void loop()
 {
   delay(1000);
-  if (DebugMode == true)
+  if (debugMode)
   {
     DebugControls::mainMenu();
   }
-  /*
-  if (GearboxRun == false)
-  {
-    Serial.println("Gearbox Stopped, restarting timer");
-    GearboxRun = true;
-    timerAlarmWrite(timer, timerMs * 1000, true);
-    timerAlarmEnable(timer);
-  }
-  else
-  {
-    Serial.println("Gearbox still running");
-  }
-  */
 }
 
 void receiveEvent(int numBytes)
@@ -94,17 +117,43 @@ void receiveEvent(int numBytes)
   }
   else
   {
-    if (DebugMode == true)
+    if (debugMode)
     {
       Serial.println("Error: requestString is not 32 bytes long");
     }
-    requestString[i] = 0xEE; // 0xEE is the code for transmission error
+    requestString[0] = 0xEE; // 0xEE is the code for transmission error
   }
   Communication::handleRequest(requestString, replyString);
 }
 
 void requestEvent()
 {
-  // Send a message back to the master board
+  // Send answer back to the master board -> reply string
+  // reply string should also contain current position (maybe read out directly here?)
   Wire.write("Hello from slave board!");
+}
+
+void startTask2()
+{
+  const int currentCoreId = xPortGetCoreID();
+  const int newCoreId = currentCoreId == 0 ? 1 : 0;
+
+  xTaskCreatePinnedToCore(
+      task2Code,    /* Function to implement the task */
+      "Task1",      /* Name of the task */
+      10000,        /* Stack size in words, no idea what size to use */
+      NULL,         /* Task input parameter */
+      0,            /* Priority of the task */
+      &task2Handle, /* Task handle. */
+      newCoreId);   /* Core where the task should run */
+}
+
+void task2Code(void *parameter)
+{
+  task2Setup();
+
+  while (true)
+  {
+    task2Loop();
+  }
 }
