@@ -30,8 +30,7 @@ void Gearbox::run(int currentPosition, int requestedPosition, int stepDeviation)
     // TODO: entkommentieren
     // DeskMotor::run(targetPosition, newSpeed);
 
-    deskMotor.setMaxAcceleration(150);
-    deskMotor.run(1000);
+    deskMotor.start();
 }
 
 void Gearbox::standby()
@@ -177,4 +176,9 @@ void Gearbox::moveDown()
 void Gearbox::moveToPosition(long targetPosition)
 {
     deskMotor.setNewTargetPosition(targetPosition);
+}
+
+void Gearbox::initMotor()
+{
+    deskMotor.startTimer();
 }

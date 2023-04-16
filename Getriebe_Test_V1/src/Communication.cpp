@@ -204,3 +204,8 @@ void Communication::moveDown()
     gearbox.startMotor();
     gearbox.moveDown();
 }
+
+void Communication::initDeskMotor()
+{
+    gearbox.initMotor();
+}

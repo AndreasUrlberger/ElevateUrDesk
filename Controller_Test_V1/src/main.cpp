@@ -18,7 +18,7 @@ void setup()
 void loop()
 {
   delay(1000);
-  if (debugMode)
+  if (DebugMode)
   {
     Serial.println("Debug mode active\n");
     Serial.println("Input a number to test the following:");
@@ -27,3 +27,4 @@ void loop()
     DebugControls::handleDebugMode(debugFeature);
   }
 }
+

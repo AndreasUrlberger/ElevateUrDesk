@@ -33,6 +33,7 @@ public:
     void moveDown();
 
     void emergencyStop();
+    void initDeskMotor();
 
     Communication(std::string gearboxName, float gearboxSensorHeight, float gearboxMathematicalHeight);
     ~Communication() = default;

@@ -49,6 +49,7 @@ public:
 
     void updateMotorSpeed(int speed);
 
+    void initMotor();
     void startMotor();
     void stopMotor();
 

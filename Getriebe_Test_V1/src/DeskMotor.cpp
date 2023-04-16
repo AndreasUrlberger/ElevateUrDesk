@@ -1,7 +1,10 @@
 #include "DeskMotor.hpp"
 
+DeskMotor *DeskMotor::instance;
+
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
+    instance = this;
 }
 
 DeskMotor::~DeskMotor()
@@ -15,10 +18,51 @@ void DeskMotor::setup()
     deskMotor.setMaxSpeed(maxSpeed);
     deskMotor.setAcceleration(maxAcceleration);
     deskMotor.setCurrentPosition(0); // TODO: should be lastCurrentPosition
-    Serial.printf("Main motor initialized");
+
+    Serial.printf("Main motor initialized\n");
 }
 
-void DeskMotor::run(int newSpeed) // has to run on different core so that it is non-blocking ?!?
+void DeskMotor::step()
+{
+    if (isRunning && (deskMotor.distanceToGo() != 0))
+    {
+        deskMotor.run();
+    }
+
+    iterationCounter++;
+    if (iterationCounter >= skippedStepsUpdateIteration)
+    {
+        iterationCounter = 0;
+
+        // Subtract skipped steps from current position
+        const int skippedSteps = getMissingSteps();
+        deskMotor.fixMissingSteps(skippedSteps);
+
+        digitalWrite(18, HIGH);
+
+        // Update to new target position
+        deskMotor.moveTo(targetPosition);
+
+        digitalWrite(18, LOW);
+    }
+}
+
+void IRAM_ATTR onDeskMotorTimer()
+{
+    DeskMotor::instance->step();
+}
+
+// Run on the core that starts it.
+void DeskMotor::startTimer()
+{
+    // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
+    timer = timerBegin(0, 80, true);
+    timerAttachInterrupt(timer, &onDeskMotorTimer, true);
+    timerAlarmWrite(timer, iterationIntervalUS, true);
+    timerAlarmEnable(timer);
+}
+
+void DeskMotor::init(const int newSpeed) // has to run on different core so that it is non-blocking ?!?
 {
     // set target position
     if (debugMode)
@@ -27,50 +71,16 @@ void DeskMotor::run(int newSpeed) // has to run on different core so that it is 
         Serial.printf("steps to old target position: %d \n", deskMotor.distanceToGo());
     }
     deskMotor.moveTo(targetPosition);
+    if (debugMode)
+    {
+        Serial.printf("steps to new target position: %d \n", deskMotor.distanceToGo());
+    }
     deskMotor.setMaxSpeed(newSpeed);
     // newSpeed is the computed speed to resync the two gearboxes
 
     if (debugMode)
     {
         Serial.printf("Target position set to %d \n", targetPosition);
-    }
-
-    long lastTime = millis();
-    long iterationCounter = 0;
-    const long maxIterationCounter = 1000000;
-    while (true)
-    {
-        if (isRunning && (deskMotor.distanceToGo() != 0))
-        {
-            deskMotor.run();
-        }
-
-        delayMicroseconds(10);
-
-        // digitalWrite(18, HIGH);
-
-        // // const long currentTime = random(1000);
-        // const long currentTime = 200;
-        // // const long currentTime = micros() / 1000;
-        // //  Take absolute value of difference to handle overflow.
-        // // const long diffTime = abs(currentTime - lastTime);
-        // iterationCounter++;
-
-        // // if (diffTime >= skippedStepsUpdateIntervalMS)
-        // if (iterationCounter >= maxIterationCounter)
-        // {
-        //     iterationCounter = 0;
-        //     lastTime = currentTime;
-
-        //     // Subtract skipped steps from current position
-        //     const int skippedSteps = getMissingSteps();
-        //     deskMotor.fixMissingSteps(skippedSteps);
-
-        //     // Update to new target position
-        //     deskMotor.moveTo(targetPosition);
-        // }
-
-        // digitalWrite(18, LOW);
     }
 }
 

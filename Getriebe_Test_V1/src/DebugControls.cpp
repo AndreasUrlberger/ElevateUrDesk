@@ -13,6 +13,8 @@ int stepsToAdd = 1000;   // only for debug purposes
 
 void DebugControls::mainMenu() // main menu for Gearbox debug mode
 {
+  Serial.printf("Target loop : %d \n", mDeskMotor->targetPosition);
+
   Serial.println("Debugmode active:");
   Serial.println("1. I2C-Debug Mode");
   Serial.println("2. OTA Update Mode");
@@ -155,13 +157,15 @@ void DebugControls::customMotorTest()
     }
     Serial.println(stepsToAdd);
 
+    mDeskMotor->setCurrentPosition(currentPos);
     // run motor
+    mDeskMotor->setup();
+    mDeskMotor->init(speed);
     mDeskMotor->setNewTargetPosition(targetPosition);
     mDeskMotor->start();
-    mDeskMotor->run(speed);
 
     // reset current position to previous position
-    mDeskMotor->setCurrentPosition(currentPos);
+    // mDeskMotor->setCurrentPosition(currentPos);
 
     // decide on next action
     Serial.println("press 1 for same settings, 2 for new setup: ");

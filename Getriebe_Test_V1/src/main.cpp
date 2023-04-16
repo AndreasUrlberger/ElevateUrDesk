@@ -87,11 +87,13 @@ void task2Setup()
 {
   const int speed = 1000; // TODO set real value
   communication.run(speed);
+
+  communication.initDeskMotor();
 }
 
 void task2Loop()
 {
-  delay(1); // "Power Saving"
+  //delay(1); // "Power Saving"
   // yield();
 }
 
