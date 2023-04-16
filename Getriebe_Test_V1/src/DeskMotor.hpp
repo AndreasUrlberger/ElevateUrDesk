@@ -7,17 +7,21 @@
 
 class DeskMotor
 {
+    friend class DebugControls;
+
 private:
     AccelStepper deskMotor{AccelStepper::HALF4WIRE, PrimaryBrake1, PrimaryBrake3, PrimaryBrake2, PrimaryBrake4}; // TODO: disable when debugging is done
-    float maxSpeed{500.f};                                                                                       // max speed of main motor
+    float maxSpeed{1500.f};                                                                                      // max speed of main motor
     float maxAcceleration{100.f};
-    long targetPosition = 0; // current target position of the motor
+    volatile long targetPosition = 0; // current target position of the motor
     bool isRunning{false};
     std::atomic_int skippedSteps{0};
 
     int getMissingSteps();
-    long skippedStepsUpdateIntervalMS{10};
+    long skippedStepsUpdateIntervalMS{100};
     long moveInputIntervalMS{10};
+
+    float upDownStepBufferFactor{0.002f};
 
 public:
     DeskMotor(const float maxSpeed, const float maxAcceleration);
@@ -30,6 +34,7 @@ public:
     long getCurrentPosition();
     void setNewTargetPosition(const long newTargetPosition);
     void addToTargetPosition(const long stepsToAdd);
+    void setCurrentPosition(const long newPosition);
 
     void start();
     void stop();
@@ -37,6 +42,6 @@ public:
     void updateMotorSpeed(const int speed);
     void addSkippedSteps(const int stepsToAdd);
 
-    void DeskMotor::moveUp();
-    void DeskMotor::moveDown();
+    void moveUp();
+    void moveDown();
 };

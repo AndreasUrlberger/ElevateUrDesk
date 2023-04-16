@@ -6,11 +6,10 @@
 #include "Pinout.hpp"
 #include <string>
 #include "Gearbox.hpp"
-#include "DebugControls.hpp"
 
 class Communication
 {
-    friend DebugControls;
+    friend class DebugControls;
 
 private:
     Gearbox gearbox;
@@ -29,6 +28,9 @@ public:
     void toggleDebugMode(uint8_t (&message)[32], uint8_t (&reply)[32]);
     void toggleUpdateMode(uint8_t (&message)[32], uint8_t (&reply)[32]);
     void returnSoftwareVersion(uint8_t (&message)[32], uint8_t (&reply)[32]);
+
+    void moveUp();
+    void moveDown();
 
     void emergencyStop();
 

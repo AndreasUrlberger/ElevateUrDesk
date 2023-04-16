@@ -1,8 +1,12 @@
 #include "DebugControls.hpp"
 #include "TextInput.hpp"
+#include <chrono>
+#include <thread>
 
 DeskMotor *DebugControls::mDeskMotor;
 Communication *DebugControls::mCommunication;
+bool DebugControls::isDebugButtonPressed = false;
+TaskHandle_t DebugControls::moveProcessTaskHandle;
 
 long targetPosition = 0; // target position for motor, should be set by DeskMotor to the current position of the motor
 int stepsToAdd = 1000;   // only for debug purposes
@@ -19,14 +23,43 @@ void DebugControls::mainMenu() // main menu for Gearbox debug mode
   handleDebugMode(debugFeature);
 }
 
-void DebugControls::debugButton1Press()
+void DebugControls::debugButton1Press(bool isPressed)
 {
   // action to do if DebugButton1 is pressed
 
   // increase targetPosition by xxx steps
-  targetPosition += stepsToAdd;
-  mDeskMotor->setNewTargetPosition(targetPosition);
+  // targetPosition += stepsToAdd;
+  // mDeskMotor->setNewTargetPosition(targetPosition);
   // Serial.printf("targetPosition increased by %d steps to %d \n", stepsToAdd, targetPosition);
+
+  isDebugButtonPressed = isPressed;
+}
+
+void DebugControls::buttonPressProcess(void *arg)
+{
+  // Create chrono start time
+  const auto start = std::chrono::high_resolution_clock::now();
+  // Chrono iteration time
+  const auto iteration = std::chrono::milliseconds(mDeskMotor->moveInputIntervalMS);
+  // chrono target time
+  auto target = start;
+
+  Serial.println("buttonPressProcess started");
+
+  while (true)
+  {
+    // Execute code
+    if (isDebugButtonPressed)
+    {
+      mCommunication->moveUp();
+    }
+
+    // Give Arduino time to do other things.
+    yield();
+
+    target += iteration;
+    std::this_thread::sleep_until(target);
+  }
 }
 
 void DebugControls::handleDebugMode(int debugFeature)
@@ -124,6 +157,7 @@ void DebugControls::customMotorTest()
 
     // run motor
     mDeskMotor->setNewTargetPosition(targetPosition);
+    mDeskMotor->start();
     mDeskMotor->run(speed);
 
     // reset current position to previous position
@@ -159,4 +193,16 @@ void DebugControls::initDebugControls(Communication *const communication)
 {
   mCommunication = communication;
   mDeskMotor = &(communication->gearbox.deskMotor);
+
+  // Run task on main thread, not on the motor thread!
+  const BaseType_t currentCoreId = xPortGetCoreID();
+
+  // xTaskCreatePinnedToCore(
+  //     buttonPressProcess,     /* Function to implement the task */
+  //     "Task2",                /* Name of the task */
+  //     2048,                   /* Stack size in words, no idea what size to use */
+  //     NULL,                   /* Task input parameter */
+  //     0,                      /* Priority of the task */
+  //     &moveProcessTaskHandle, /* Task handle. */
+  //     currentCoreId);         /* Core where the task should run */
 }

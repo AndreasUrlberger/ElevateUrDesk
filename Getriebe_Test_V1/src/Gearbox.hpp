@@ -6,11 +6,10 @@
 #include "Brake.hpp"
 #include "Pinout.hpp"
 #include "DeskMotor.hpp"
-#include "DebugControls.hpp"
 
 class Gearbox
 {
-    friend DebugControls;
+    friend class DebugControls;
 
     enum class GearboxState
     {

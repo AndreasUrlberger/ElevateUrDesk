@@ -190,5 +190,17 @@ void Communication::emergencyStop()
 
 void Communication::run(int speed)
 {
-    gearbox.run(speed);
+    gearbox.run(0, 0, 0);
+}
+
+void Communication::moveUp()
+{
+    gearbox.startMotor();
+    gearbox.moveUp();
+}
+
+void Communication::moveDown()
+{
+    gearbox.startMotor();
+    gearbox.moveDown();
 }

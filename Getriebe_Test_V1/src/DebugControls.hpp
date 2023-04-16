@@ -14,6 +14,8 @@ private:
 
     static Communication *mCommunication;
     static DeskMotor *mDeskMotor;
+    static bool isDebugButtonPressed;
+    static TaskHandle_t moveProcessTaskHandle;
 
 public:
     static void handleDebugMode(int debugFeature);
@@ -22,7 +24,8 @@ public:
     static void motorDebug();
     static void customMotorTest();
 
-    static void debugButton1Press();
+    static void debugButton1Press(bool isPressed);
 
     static void initDebugControls(Communication *const communication);
+    static void buttonPressProcess(void *arg);
 };

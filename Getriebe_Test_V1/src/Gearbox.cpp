@@ -29,6 +29,9 @@ void Gearbox::run(int currentPosition, int requestedPosition, int stepDeviation)
     int targetPosition = currentPosition;
     // TODO: entkommentieren
     // DeskMotor::run(targetPosition, newSpeed);
+
+    deskMotor.setMaxAcceleration(150);
+    deskMotor.run(1000);
 }
 
 void Gearbox::standby()
@@ -161,12 +164,14 @@ void Gearbox::moveUp()
 {
     // Calculate target position based on current position and speed.
     // Set target position.
+    deskMotor.moveUp();
 }
 
 void Gearbox::moveDown()
 {
     // Calculate target position based on current position and speed.
     // Set target position.
+    deskMotor.moveDown();
 }
 
 void Gearbox::moveToPosition(long targetPosition)

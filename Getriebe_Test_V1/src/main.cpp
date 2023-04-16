@@ -30,12 +30,14 @@ Communication communication{gearboxName, gearboxSensorHeight, gearboxMathematica
 // only for debug purposes, TODO: remove later
 ICACHE_RAM_ATTR void buttonPress()
 {
-  DebugControls::debugButton1Press();
+  // LOW is high for this button.
+  DebugControls::debugButton1Press(digitalRead(DebugButton1) == LOW);
 }
 
 void IRAM_ATTR onTimer()
 {
-  communication.emergencyStop();
+  // TODO Fix. Currently always stops the gearbox.
+  // communication.emergencyStop();
 }
 
 void setup()
@@ -61,6 +63,9 @@ void setup()
   Wire.onRequest(requestEvent);
   Serial.begin(115200);
 
+  // TODO Debug only
+  pinMode(18, OUTPUT);
+
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, timerMs * 1000, true);
@@ -69,24 +74,25 @@ void setup()
   if (debugMode)
   {
     pinMode(DebugButton1, INPUT_PULLUP); // set the digital pin as output
-    attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, FALLING);
+    attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, CHANGE);
   }
 
   DebugControls::initDebugControls(&communication);
 
   startTask2();
+  Serial.println("Task1 is running on core " + String(xPortGetCoreID()) + ".");
 }
 
 void task2Setup()
 {
   const int speed = 1000; // TODO set real value
-  DeskMotor *const deskMotor = gearbox.getDeskMotor();
-  deskMotor->run(speed);
+  communication.run(speed);
 }
 
 void task2Loop()
 {
   delay(1); // "Power Saving"
+  // yield();
 }
 
 void loop()
@@ -123,7 +129,7 @@ void receiveEvent(int numBytes)
     }
     requestString[0] = 0xEE; // 0xEE is the code for transmission error
   }
-  Communication::handleRequest(requestString, replyString);
+  communication.handleRequest(requestString, replyString);
 }
 
 void requestEvent()
@@ -140,7 +146,7 @@ void startTask2()
 
   xTaskCreatePinnedToCore(
       task2Code,    /* Function to implement the task */
-      "Task1",      /* Name of the task */
+      "Task2",      /* Name of the task */
       10000,        /* Stack size in words, no idea what size to use */
       NULL,         /* Task input parameter */
       0,            /* Priority of the task */
@@ -150,6 +156,8 @@ void startTask2()
 
 void task2Code(void *parameter)
 {
+  Serial.println("Task2 is running on core " + String(xPortGetCoreID()) + ".");
+
   task2Setup();
 
   while (true)

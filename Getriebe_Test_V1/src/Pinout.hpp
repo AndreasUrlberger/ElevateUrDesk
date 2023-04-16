@@ -55,7 +55,7 @@
 // other variables
 static bool debugMode = true;
 
-static int minSteps = 10000000; // 10 million steps, has to be checked, step 0 is counted from floor height, minSteps starts from the min. achievable position (incl. some buffer)
+static int minSteps = 0;        // 10000000; // 10 million steps, has to be checked, step 0 is counted from floor height, minSteps starts from the min. achievable position (incl. some buffer)
 static int maxSteps = 40000000; // 40 million steps, has to be checked, steps from bottom to top
 
 static int lastCurrentPosition = minSteps; // last position of the desk before power off, is used to restore the desk position after power on, TODO: actually save it somewhere

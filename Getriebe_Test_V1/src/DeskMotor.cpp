@@ -36,6 +36,8 @@ void DeskMotor::run(int newSpeed) // has to run on different core so that it is 
     }
 
     long lastTime = millis();
+    long iterationCounter = 0;
+    const long maxIterationCounter = 1000000;
     while (true)
     {
         if (isRunning && (deskMotor.distanceToGo() != 0))
@@ -43,21 +45,32 @@ void DeskMotor::run(int newSpeed) // has to run on different core so that it is 
             deskMotor.run();
         }
 
-        const long currentTime = millis();
-        // Take absolute value of difference to handle overflow.
-        const long diffTime = abs(currentTime - lastTime);
+        delayMicroseconds(10);
 
-        if (diffTime >= skippedStepsUpdateIntervalMS)
-        {
-            lastTime = currentTime;
+        // digitalWrite(18, HIGH);
 
-            // Subtract skipped steps from current position
-            const int skippedSteps = getMissingSteps();
-            deskMotor.fixMissingSteps(skippedSteps);
+        // // const long currentTime = random(1000);
+        // const long currentTime = 200;
+        // // const long currentTime = micros() / 1000;
+        // //  Take absolute value of difference to handle overflow.
+        // // const long diffTime = abs(currentTime - lastTime);
+        // iterationCounter++;
 
-            // Update to new target position
-            deskMotor.moveTo(targetPosition);
-        }
+        // // if (diffTime >= skippedStepsUpdateIntervalMS)
+        // if (iterationCounter >= maxIterationCounter)
+        // {
+        //     iterationCounter = 0;
+        //     lastTime = currentTime;
+
+        //     // Subtract skipped steps from current position
+        //     const int skippedSteps = getMissingSteps();
+        //     deskMotor.fixMissingSteps(skippedSteps);
+
+        //     // Update to new target position
+        //     deskMotor.moveTo(targetPosition);
+        // }
+
+        // digitalWrite(18, LOW);
     }
 }
 
@@ -109,6 +122,11 @@ void DeskMotor::addSkippedSteps(const int stepsToAdd)
     skippedSteps.fetch_add(stepsToAdd);
 }
 
+void DeskMotor::setCurrentPosition(const long newPosition)
+{
+    deskMotor.setCurrentPosition(newPosition);
+}
+
 int DeskMotor::getMissingSteps()
 {
     // Atomically replace the number of skipped steps as another thread might add to it.
@@ -125,27 +143,85 @@ void DeskMotor::moveUp()
     }
 
     // Calculate target position based on current position and speed.
-    const long currentPosition = deskMotor.currentPosition();
     const float currentSpeed = deskMotor.speed();
-    const float expectedEndSpeed = currentSpeed + maxAcceleration * moveInputIntervalMS / 1000;
-    const float cappedEndSpeed = min(expectedEndSpeed, maxSpeed);
+    const long currentPosition = deskMotor.currentPosition();
+    Serial.print("currentPosition: ");
+    Serial.println(currentPosition);
+    Serial.print("currentSpeed: ");
+    Serial.println(currentSpeed);
 
-    // Triangular rise till max speed.
-    const float timeTillMaxSpeed = (expectedEndSpeed - cappedEndSpeed) / cappedEndSpeed;
-    const float triangleRiseSteps = 0;
-    // Rectangular plateau at max speed.
-    const float rectangleSteps = 0;
+    const float maxPotAcceleration = maxAcceleration * moveInputIntervalMS / 1000;
+    const float theoreticalEndSpeed = currentSpeed + maxPotAcceleration;
+
+    // Serial.print("maxPotAcceleration: ");
+    // Serial.println(maxPotAcceleration);
+
+    // Serial.print("theorEndSpeed: ");
+    // Serial.println(theoreticalEndSpeed);
+
+    float actualEndSpeed;
+    float totalSteps = 0;
+
+    if (theoreticalEndSpeed > maxSpeed)
+    {
+        Serial.println("Max Speed.");
+        // Speed is capped.
+        actualEndSpeed = maxSpeed;
+        // What percentage of time the acceleration was active for?
+        const float activeAccelerationPercentage = (theoreticalEndSpeed - actualEndSpeed) / maxPotAcceleration;
+
+        // Triangular rise till max speed (platoe).
+        const float actualAcceleration = maxPotAcceleration * activeAccelerationPercentage;
+        const float accelerationTime = moveInputIntervalMS * activeAccelerationPercentage / 1000;
+        const float triangleRiseSteps = 0.5 * actualAcceleration * accelerationTime;
+        // Rectangular plateau at max speed (platoe).
+        const float plateauTime = (moveInputIntervalMS / 1000.0f - accelerationTime);
+        const float rectangleSteps = actualAcceleration * plateauTime;
+
+        totalSteps = triangleRiseSteps + rectangleSteps;
+    }
+    else
+    {
+        // Speed is not capped.
+        actualEndSpeed = theoreticalEndSpeed;
+        const float activeAccelerationPercentage = 1;
+
+        // Triangular rise till.
+        const float triangleRiseSteps = 0.5 * maxPotAcceleration * moveInputIntervalMS / 1000;
+
+        totalSteps = triangleRiseSteps;
+    }
+
+    // Serial.print("acceleration part: ");
+    // Serial.println(totalSteps);
+
+    // Base rectangle.
+    const float baseRectangleSteps = currentSpeed * moveInputIntervalMS / 1000;
+
+    // Serial.print("baseRectangle: ");
+    // Serial.println(baseRectangleSteps);
+
     // Triangular decrease till halt.
-    const float triangleFallSteps = 0;
+    const float decelerationTime = actualEndSpeed / maxAcceleration; // seconds
+    const float triangleFallSteps = 0.5 * actualEndSpeed * decelerationTime;
 
-    const long deltaSteps = triangleRiseSteps + rectangleSteps + triangleFallSteps;
-    const long bufferSteps = deltaSteps * 0.002;
-    const long targetPosition = currentPosition + deltaSteps + bufferSteps;
+    // Serial.print("DecelerationTime ");
+    // Serial.println(decelerationTime);
 
-    // TODO Does this work if we are close to the end of the desk?
+    // Serial.print("triangleFallSteps: ");
+    // Serial.println(triangleFallSteps);
+
+    totalSteps += baseRectangleSteps + triangleFallSteps;
+    const long bufferSteps = totalSteps * upDownStepBufferFactor;
+    const long targetPosition = currentPosition + totalSteps + bufferSteps;
 
     // Set target position.
     setNewTargetPosition(targetPosition);
+    const double deltaSteps = totalSteps + bufferSteps;
+    // Serial.print("DeltaPosition: ");
+    // Serial.println(deltaSteps);
+    Serial.print("TargetPosition: ");
+    Serial.println(targetPosition);
 }
 
 void DeskMotor::moveDown()
