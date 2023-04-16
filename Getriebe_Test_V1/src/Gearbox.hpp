@@ -10,6 +10,7 @@
 class Gearbox
 {
     friend class DebugControls;
+    friend class MainLogUtil;
 
     enum class GearboxState
     {
@@ -23,31 +24,22 @@ private:
     static constexpr float maxDeskMotorSpeed{500.f};        // max speed of main motor
     static constexpr float maxDeskMotorAcceleration{100.f}; // max acceleration of main motor
 
-    /* data */
-    std::string name{};
-    Lightgate lightgate{};
     DeskMotor deskMotor{maxDeskMotorSpeed, maxDeskMotorAcceleration};
-    Brake brake{};
-    GearboxState state{};
-    float sensorHeight{};
-    float mathematicalHeight{};
 
-    std::string nameOfState(GearboxState state);
+#pragma region REMOVED
+    // std::string nameOfState(GearboxState state);
+
+    // std::string name{};
+    // Lightgate lightgate{};
+    // Brake brake{};
+    // GearboxState state{};
+    // float sensorHeight{};
+    // float mathematicalHeight{};
+#pragma endregion REMOVED
 
 public:
     Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight);
     ~Gearbox();
-
-    void setup();
-    void run(int currentPosition, int requestedPosition, int stepDeviation);
-    void powerLoss();
-    void status();
-    void standby();
-    void stop();
-    int computeNewSpeed(int stepDeviation, int currentSpeed);
-    int computeTargetPosition(int stepDeviation, int currentSpeed);
-
-    void updateMotorSpeed(int speed);
 
     void initMotor();
     void startMotor();
@@ -56,4 +48,16 @@ public:
     void moveUp();
     void moveDown();
     void moveToPosition(long targetPosition);
+
+#pragma region REMOVED
+    // void setup();
+    // void run(int currentPosition, int requestedPosition, int stepDeviation);
+    // void powerLoss();
+    // void status();
+    // void standby();
+    // void stop();
+    // int computeNewSpeed(int stepDeviation, int currentSpeed);
+    // int computeTargetPosition(int stepDeviation, int currentSpeed);
+    // void updateMotorSpeed(int speed);
+#pragma endregion REMOVED
 };

@@ -1,32 +1,38 @@
 #include "DeskMotor.hpp"
 
 DeskMotor *DeskMotor::instance;
+hw_timer_t *DeskMotor::timerHandle;
+
+void IRAM_ATTR onDeskMotorTimer()
+{
+    DeskMotor::instance->step();
+}
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
+    Serial.println("DeskMotor constructor called.");
     instance = this;
+    deskMotor.setCurrentPosition(0);
+    deskMotor.setMaxSpeed(maxSpeed);
+    deskMotor.setAcceleration(maxAcceleration);
+
+    startTimer();
+
+    Serial.printf("Main motor initialized\n");
 }
 
 DeskMotor::~DeskMotor()
 {
 }
 
-void DeskMotor::setup()
-{
-    // Powering on the motor controller by turning on the relay(s) in the right order
-    // SPI communication with motor controller
-    deskMotor.setMaxSpeed(maxSpeed);
-    deskMotor.setAcceleration(maxAcceleration);
-    deskMotor.setCurrentPosition(0); // TODO: should be lastCurrentPosition
-
-    Serial.printf("Main motor initialized\n");
-}
-
 void DeskMotor::step()
 {
-    if (isRunning && (deskMotor.distanceToGo() != 0))
+    if (isRunning)
     {
+        // if(deskMotor.distanceToGo() != 0) Doesnt matter, does it?
+        digitalWrite(18, HIGH);
         deskMotor.run();
+        digitalWrite(18, LOW);
     }
 
     iterationCounter++;
@@ -34,54 +40,49 @@ void DeskMotor::step()
     {
         iterationCounter = 0;
 
-        // Subtract skipped steps from current position
-        const int skippedSteps = getMissingSteps();
-        deskMotor.fixMissingSteps(skippedSteps);
+        // // Subtract skipped steps from current position
+        // const int skippedSteps = getMissingSteps();
+        // deskMotor.fixMissingSteps(skippedSteps);
 
-        digitalWrite(18, HIGH);
+        // digitalWrite(18, HIGH);
 
         // Update to new target position
-        deskMotor.moveTo(targetPosition);
+        // deskMotor.moveTo(targetPosition);
 
-        digitalWrite(18, LOW);
+        // digitalWrite(18, LOW);
     }
 }
 
-void IRAM_ATTR onDeskMotorTimer()
-{
-    DeskMotor::instance->step();
-}
-
-// Run on the core that starts it.
 void DeskMotor::startTimer()
 {
-    // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
-    timer = timerBegin(0, 80, true);
-    timerAttachInterrupt(timer, &onDeskMotorTimer, true);
-    timerAlarmWrite(timer, iterationIntervalUS, true);
-    timerAlarmEnable(timer);
-}
+    // Create new task to handle the timer interrupt.
+    Serial.println("Start timer task.");
+    xTaskCreatePinnedToCore(
+        [](void *param)
+        {
+            // Runs on core 0.
+            Serial.println("DeskMotorTimerTask is running on core " + String(xPortGetCoreID()) + ".");
 
-void DeskMotor::init(const int newSpeed) // has to run on different core so that it is non-blocking ?!?
-{
-    // set target position
-    if (debugMode)
-    {
-        Serial.printf("Current position: %d \n", deskMotor.currentPosition());
-        Serial.printf("steps to old target position: %d \n", deskMotor.distanceToGo());
-    }
-    deskMotor.moveTo(targetPosition);
-    if (debugMode)
-    {
-        Serial.printf("steps to new target position: %d \n", deskMotor.distanceToGo());
-    }
-    deskMotor.setMaxSpeed(newSpeed);
-    // newSpeed is the computed speed to resync the two gearboxes
+            // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
+            DeskMotor::timerHandle = timerBegin(0, 80, true);
+            timerAttachInterrupt(DeskMotor::timerHandle, &onDeskMotorTimer, true);
+            timerAlarmWrite(DeskMotor::timerHandle, iterationIntervalUS, true);
+            timerAlarmEnable(DeskMotor::timerHandle);
+            Serial.println("Just started timer.");
 
-    if (debugMode)
-    {
-        Serial.printf("Target position set to %d \n", targetPosition);
-    }
+            while (true)
+            {
+                delay(1000);
+            }
+        },
+        "DeskMotorTimerTask", // Task name
+        10000,                // Stack size (bytes)
+        NULL,                 // Parameter
+        0,                    // Task priority
+        NULL,                 // Task handle
+        0);                   // Core where the task should run
+
+    Serial.println("DeskMotorTimerTask started.");
 }
 
 void DeskMotor::setMaxAcceleration(const float newMaxAcceleration)
@@ -104,6 +105,8 @@ long DeskMotor::getCurrentPosition()
 void DeskMotor::setNewTargetPosition(const long newTargetPosition)
 {
     targetPosition = constrain(newTargetPosition, minSteps, maxSteps);
+    // TODO Debug only, remove.
+    // deskMotor.moveTo(targetPosition);
 }
 
 void DeskMotor::addToTargetPosition(const long stepsToAdd)
@@ -121,26 +124,21 @@ void DeskMotor::stop()
     isRunning = false;
 }
 
-void DeskMotor::updateMotorSpeed(const int speed)
-{
-    deskMotor.setMaxSpeed(speed);
-}
-
 void DeskMotor::addSkippedSteps(const int stepsToAdd)
 {
     // Add the number steps atomically as the motor might reset it to 0.
     skippedSteps.fetch_add(stepsToAdd);
 }
 
-void DeskMotor::setCurrentPosition(const long newPosition)
-{
-    deskMotor.setCurrentPosition(newPosition);
-}
-
 int DeskMotor::getMissingSteps()
 {
     // Atomically replace the number of skipped steps as another thread might add to it.
     return skippedSteps.exchange(0);
+}
+
+void DeskMotor::setCurrentPosition(const long newPosition)
+{
+    deskMotor.setCurrentPosition(newPosition);
 }
 
 void DeskMotor::moveUp()
