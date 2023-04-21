@@ -67,6 +67,7 @@ void setup()
 
   // TODO Debug only
   pinMode(18, OUTPUT);
+  pinMode(19, OUTPUT);
   pinMode(DebugButton1, INPUT_PULLUP); // set the digital pin as output
   attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, CHANGE);
 

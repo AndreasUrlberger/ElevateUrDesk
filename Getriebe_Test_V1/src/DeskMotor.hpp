@@ -26,13 +26,15 @@ private:
     static constexpr const long skippedStepsUpdateIteration{1000};
     // Current iteration counter.
     long iterationCounter{0};
-    static const constexpr long iterationIntervalUS{20};
+    static const constexpr long iterationIntervalUS{10};
+    static hw_timer_t *timerHandle;
 
 public:
     DeskMotor(const float maxSpeed, const float maxAcceleration);
     ~DeskMotor();
 
     static DeskMotor *instance;
+    std::atomic_int dueTaskIterations{0};
 
     void setMaxSpeed(const float newSpeed);
     void setMaxAcceleration(const float newAcceleration);
