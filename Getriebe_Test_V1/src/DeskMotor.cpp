@@ -9,12 +9,9 @@ hw_timer_t *DeskMotor::timerHandle;
 
 void IRAM_ATTR onDeskMotorTimer()
 {
-    // DeskMotor::instance->step();
     digitalWrite(19, HIGH);
-    // deskMotor.run();
     DeskMotor::instance->dueTaskIterations.fetch_add(1);
     digitalWrite(19, LOW);
-
 }
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
@@ -39,9 +36,9 @@ void DeskMotor::step()
     if (isRunning)
     {
         // if(deskMotor.distanceToGo() != 0) Doesnt matter, does it?
-        digitalWrite(18, HIGH);
+        //digitalWrite(18, HIGH);
         deskMotor.run();
-        digitalWrite(18, LOW);
+        //digitalWrite(18, LOW);
     }
 
     iterationCounter++;
@@ -67,23 +64,13 @@ void DeskMotor::runTask()
 
     Serial.println("WDT diabled on core 1");
 
-    // // Create chrono time now.
-    // auto start = std::chrono::high_resolution_clock::now();
-    // // Create chrono interval time iterationIntervalUS.
-    // auto interval = std::chrono::microseconds(iterationIntervalUS);
-    // // Create chrono time for next iteration.
-    // auto next = start + interval;
-
-    // auto now = std::chrono::high_resolution_clock::now();
-
     while (true)
     {
         if (dueTaskIterations.load() > 0)
         {
             dueTaskIterations.fetch_sub(1);
-            // step();
             digitalWrite(18, HIGH);
-
+            step();
             digitalWrite(18, LOW);
         }
     }
