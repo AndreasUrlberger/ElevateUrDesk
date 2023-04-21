@@ -127,7 +127,7 @@ void DeskMotor::startTimer()
         "DeskMotorTimerTask", // Task name
         10000,                // Stack size (bytes)
         NULL,                 // Parameter
-        0,                    // Task priority
+        configMAX_PRIORITIES, // Task priority
         NULL,                 // Task handle
         0);                   // Core where the task should run
 }
