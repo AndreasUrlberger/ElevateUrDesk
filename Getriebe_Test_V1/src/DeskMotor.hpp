@@ -23,17 +23,16 @@ private:
 
     float upDownStepBufferFactor{0.002f};
     // The number of step iterations after which the skipped steps are updated.
-    static constexpr const long skippedStepsUpdateIteration{10000};
+    static constexpr const long skippedStepsUpdateIteration{1000};
     // Current iteration counter.
     long iterationCounter{0};
-    static const constexpr long iterationIntervalUS{10};
+    static const constexpr long iterationIntervalUS{20};
 
 public:
     DeskMotor(const float maxSpeed, const float maxAcceleration);
     ~DeskMotor();
 
     static DeskMotor *instance;
-    static hw_timer_t *timerHandle;
 
     void setMaxSpeed(const float newSpeed);
     void setMaxAcceleration(const float newAcceleration);
@@ -42,6 +41,7 @@ public:
     void addToTargetPosition(const long stepsToAdd);
     void setCurrentPosition(const long newPosition);
     void startTimer();
+    void runTask();
 
     void step();
 

@@ -8,6 +8,7 @@
 #include "Communication.hpp"
 #include "DebugControls.hpp"
 #include "TextInput.hpp"
+#include <esp_task_wdt.h>
 
 static constexpr const char *const gearboxName = "left";
 static constexpr float gearboxSensorHeight = 0.0f;
@@ -56,6 +57,10 @@ public:
 void setup()
 {
   Serial.begin(115200);
+  esp_task_wdt_init(UINT32_MAX, false);
+  esp_task_wdt_delete(NULL);
+
+  Serial.println("WDT diabled on core 0");
 
   // Cannot initialize earlier as the Serial.begin() call is required.
   communication = new Communication(gearboxName, gearboxSensorHeight, gearboxMathematicalHeight);
@@ -70,8 +75,8 @@ void setup()
 
 void loop()
 {
-  delay(1000);
-  int input = TextInput::getIntInput();
-  // LogStuff
-  MainLogUtil::logStuff();
+  delay(10);
+  // int input = TextInput::getIntInput();
+  // // LogStuff
+  // MainLogUtil::logStuff();
 }

@@ -1,12 +1,10 @@
 #include "DeskMotor.hpp"
 
-DeskMotor *DeskMotor::instance;
-hw_timer_t *DeskMotor::timerHandle;
+#include <chrono>
+#include <thread>
+#include <esp_task_wdt.h>
 
-void IRAM_ATTR onDeskMotorTimer()
-{
-    DeskMotor::instance->step();
-}
+DeskMotor *DeskMotor::instance;
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
@@ -40,16 +38,41 @@ void DeskMotor::step()
     {
         iterationCounter = 0;
 
-        // // Subtract skipped steps from current position
-        // const int skippedSteps = getMissingSteps();
-        // deskMotor.fixMissingSteps(skippedSteps);
-
-        // digitalWrite(18, HIGH);
+        // Subtract skipped steps from current position
+        const int skippedSteps = getMissingSteps();
+        deskMotor.fixMissingSteps(skippedSteps);
 
         // Update to new target position
-        // deskMotor.moveTo(targetPosition);
+        deskMotor.moveTo(targetPosition);
+    }
+}
 
-        // digitalWrite(18, LOW);
+void DeskMotor::runTask()
+{
+    Serial.println("RunTask started");
+
+    esp_task_wdt_init(UINT32_MAX, false);
+    esp_task_wdt_delete(NULL);
+
+    Serial.println("WDT diabled on core 1");
+
+    // Create chrono time now.
+    auto start = std::chrono::high_resolution_clock::now();
+    // Create chrono interval time iterationIntervalUS.
+    auto interval = std::chrono::microseconds(iterationIntervalUS);
+    // Create chrono time for next iteration.
+    auto next = start + interval;
+
+    while (true)
+    {
+        // Execute code.
+        DeskMotor::instance->step();
+
+        // Wait for next iteration.
+        std::this_thread::sleep_until(next);
+
+        // Update next iteration time.
+        next += interval;
     }
 }
 
@@ -60,25 +83,12 @@ void DeskMotor::startTimer()
     xTaskCreatePinnedToCore(
         [](void *param)
         {
-            // Runs on core 0.
-            Serial.println("DeskMotorTimerTask is running on core " + String(xPortGetCoreID()) + ".");
-
-            // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
-            DeskMotor::timerHandle = timerBegin(0, 80, true);
-            timerAttachInterrupt(DeskMotor::timerHandle, &onDeskMotorTimer, true);
-            timerAlarmWrite(DeskMotor::timerHandle, iterationIntervalUS, true);
-            timerAlarmEnable(DeskMotor::timerHandle);
-            Serial.println("Just started timer.");
-
-            while (true)
-            {
-                delay(1000);
-            }
+            DeskMotor::instance->runTask();
         },
         "DeskMotorTimerTask", // Task name
         10000,                // Stack size (bytes)
         NULL,                 // Parameter
-        0,                    // Task priority
+        configMAX_PRIORITIES, // Task priority
         NULL,                 // Task handle
         0);                   // Core where the task should run
 
