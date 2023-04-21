@@ -35,10 +35,9 @@ void DeskMotor::step()
 {
     if (isRunning)
     {
-        // if(deskMotor.distanceToGo() != 0) Doesnt matter, does it?
-        //digitalWrite(18, HIGH);
+        // digitalWrite(18, HIGH);
         deskMotor.run();
-        //digitalWrite(18, LOW);
+        // digitalWrite(18, LOW);
     }
 
     iterationCounter++;
@@ -78,24 +77,8 @@ void DeskMotor::runTask()
 
 void DeskMotor::startTimer()
 {
-    // // Create new task to handle the timer interrupt.
-    // Serial.println("Start timer task.");
-    // xTaskCreatePinnedToCore(
-    //     [](void *param)
-    //     {
-    //         DeskMotor::instance->runTask();
-    //     },
-    //     "DeskMotorTimerTask", // Task name
-    //     10000,                // Stack size (bytes)
-    //     NULL,                 // Parameter
-    //     configMAX_PRIORITIES, // Task priority
-    //     NULL,                 // Task handle
-    //     0);                   // Core where the task should run
-
-    // Serial.println("DeskMotorTimerTask started.");
-
-    // Create new task to handle the timer interrupt.
-    Serial.println("Start timer task.");
+    // Create new task to handle the timer interrupt and start the desk motor task.
+    Serial.println("Start timer/motor task.");
     xTaskCreatePinnedToCore(
         [](void *param)
         {
