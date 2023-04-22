@@ -9,9 +9,7 @@ hw_timer_t *DeskMotor::timerHandle;
 
 void IRAM_ATTR onDeskMotorTimer()
 {
-    digitalWrite(19, HIGH);
     DeskMotor::instance->dueTaskIterations.fetch_add(1);
-    digitalWrite(19, LOW);
 }
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
@@ -35,9 +33,7 @@ void DeskMotor::step()
 {
     if (isRunning)
     {
-        // digitalWrite(18, HIGH);
         deskMotor.run();
-        // digitalWrite(18, LOW);
     }
 
     iterationCounter++;
@@ -68,9 +64,7 @@ void DeskMotor::runTask()
         if (dueTaskIterations.load() > 0)
         {
             dueTaskIterations.fetch_sub(1);
-            digitalWrite(18, HIGH);
             step();
-            digitalWrite(18, LOW);
         }
     }
 }
@@ -167,6 +161,8 @@ void DeskMotor::moveUp()
         return;
     }
 
+    digitalWrite(18, HIGH);
+
     // Calculate target position based on current position and speed.
     const float currentSpeed = deskMotor.speed();
     const long currentPosition = deskMotor.currentPosition();
@@ -178,17 +174,18 @@ void DeskMotor::moveUp()
     const float maxPotAcceleration = maxAcceleration * moveInputIntervalMS / 1000;
     const float theoreticalEndSpeed = currentSpeed + maxPotAcceleration;
 
-    // Serial.print("maxPotAcceleration: ");
-    // Serial.println(maxPotAcceleration);
+    Serial.print("maxPotAcceleration: ");
+    Serial.println(maxPotAcceleration);
 
-    // Serial.print("theorEndSpeed: ");
-    // Serial.println(theoreticalEndSpeed);
+    Serial.print("theorEndSpeed: ");
+    Serial.println(theoreticalEndSpeed);
 
     float actualEndSpeed;
     float totalSteps = 0;
 
     if (theoreticalEndSpeed > maxSpeed)
     {
+        digitalWrite(19, HIGH);
         Serial.println("Max Speed.");
         // Speed is capped.
         actualEndSpeed = maxSpeed;
@@ -204,6 +201,7 @@ void DeskMotor::moveUp()
         const float rectangleSteps = actualAcceleration * plateauTime;
 
         totalSteps = triangleRiseSteps + rectangleSteps;
+        digitalWrite(19, LOW);
     }
     else
     {
@@ -217,36 +215,38 @@ void DeskMotor::moveUp()
         totalSteps = triangleRiseSteps;
     }
 
-    // Serial.print("acceleration part: ");
-    // Serial.println(totalSteps);
+    Serial.print("acceleration part: ");
+    Serial.println(totalSteps);
 
     // Base rectangle.
     const float baseRectangleSteps = currentSpeed * moveInputIntervalMS / 1000;
 
-    // Serial.print("baseRectangle: ");
-    // Serial.println(baseRectangleSteps);
+    Serial.print("baseRectangle: ");
+    Serial.println(baseRectangleSteps);
 
     // Triangular decrease till halt.
     const float decelerationTime = actualEndSpeed / maxAcceleration; // seconds
     const float triangleFallSteps = 0.5 * actualEndSpeed * decelerationTime;
 
-    // Serial.print("DecelerationTime ");
-    // Serial.println(decelerationTime);
+    Serial.print("DecelerationTime ");
+    Serial.println(decelerationTime);
 
-    // Serial.print("triangleFallSteps: ");
-    // Serial.println(triangleFallSteps);
+    Serial.print("triangleFallSteps: ");
+    Serial.println(triangleFallSteps);
 
     totalSteps += baseRectangleSteps + triangleFallSteps;
-    const long bufferSteps = totalSteps * upDownStepBufferFactor;
-    const long targetPosition = currentPosition + totalSteps + bufferSteps;
+    const float bufferSteps = totalSteps * upDownStepBufferFactor;
+    const float deltaSteps = max(10.0f, ceil(totalSteps + bufferSteps));
+    long targetPosition = currentPosition + deltaSteps;
 
     // Set target position.
     setNewTargetPosition(targetPosition);
-    const double deltaSteps = totalSteps + bufferSteps;
-    // Serial.print("DeltaPosition: ");
-    // Serial.println(deltaSteps);
+    Serial.print("DeltaPosition: ");
+    Serial.println(deltaSteps);
     Serial.print("TargetPosition: ");
     Serial.println(targetPosition);
+    Serial.println();
+    digitalWrite(18, LOW);
 }
 
 void DeskMotor::moveDown()

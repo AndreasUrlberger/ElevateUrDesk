@@ -21,8 +21,8 @@ class Gearbox
     };
 
 private:
-    static constexpr float maxDeskMotorSpeed{500.f};        // max speed of main motor
-    static constexpr float maxDeskMotorAcceleration{100.f}; // max acceleration of main motor
+    static constexpr float maxDeskMotorSpeed{1500.f};        // max speed of main motor
+    static constexpr float maxDeskMotorAcceleration{250.f}; // max acceleration of main motor
 
     DeskMotor deskMotor{maxDeskMotorSpeed, maxDeskMotorAcceleration};
 

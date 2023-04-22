@@ -19,9 +19,9 @@ private:
     std::atomic_int skippedSteps{0};
 
     int getMissingSteps();
-    long moveInputIntervalMS{10};
+    long moveInputIntervalMS{20};
 
-    float upDownStepBufferFactor{0.002f};
+    float upDownStepBufferFactor{0.1f};
     // The number of step iterations after which the skipped steps are updated.
     static constexpr const long skippedStepsUpdateIteration{1000};
     // Current iteration counter.
