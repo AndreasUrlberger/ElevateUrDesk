@@ -17,12 +17,14 @@ static constexpr float gearboxSensorHeight = 0.0f;
 static constexpr float gearboxMathematicalHeight = 0.0f;
 
 Communication *communication;
+
+#pragma region DEBUG
 hw_timer_t *debugButtonTimerHandle{nullptr};
 // Should be same as in DeskMotor.
 long moveInputIntervalMS{20};
 volatile bool debugButtonPressed{false};
 
-void /*IRAM_ATTR*/ onButtonPressedTimer()
+void IRAM_ATTR onButtonPressedTimer()
 {
   if (debugButtonPressed)
   {
@@ -39,11 +41,11 @@ ICACHE_RAM_ATTR void buttonPress()
   bool isPressed = digitalRead(DebugButton1) == LOW;
   debugButtonPressed = isPressed;
 
+  // This does not work as expected because the button bounces.
   if (isPressed)
   {
-
     // communication->moveTo(10000);
-    //  Start timer
+    // Start timer
     // timerRestart(debugButtonTimerHandle);
   }
   else
@@ -78,6 +80,7 @@ public:
     Serial.println(deskMotor->deskMotor.distanceToGo());
   }
 };
+#pragma endregion DEBUG
 
 void setup()
 {
@@ -98,10 +101,10 @@ void setup()
 
   // Initialize timer.
   // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 8000, we are dividing the base clock frequency by 8000, resulting in a timer tick frequency of 10 kHz (80 MHz / 8000 = 10 kHz).
-  // debugButtonTimerHandle = timerBegin(1, 8000, true);
-  // timerAttachInterrupt(debugButtonTimerHandle, &onButtonPressedTimer, true);
-  // timerAlarmWrite(debugButtonTimerHandle, 100, true); // Every 10 ms.
-  // timerAlarmEnable(debugButtonTimerHandle);
+  debugButtonTimerHandle = timerBegin(1, 8000, true);
+  timerAttachInterrupt(debugButtonTimerHandle, &onButtonPressedTimer, true);
+  timerAlarmWrite(debugButtonTimerHandle, 100, true); // Every 10 ms.
+  timerAlarmEnable(debugButtonTimerHandle);
   // timerStop(debugButtonTimerHandle);
 
   attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, CHANGE);
@@ -111,26 +114,5 @@ void setup()
 
 void loop()
 {
-  // int input = TextInput::getIntInput();
-  //  LogStuff
-  // MainLogUtil::logStuff();
 
-  // Chrono timestamp now
-  auto now = std::chrono::high_resolution_clock::now();
-  // Chrono time interval
-  auto interval = std::chrono::milliseconds(moveInputIntervalMS);
-  // Chrono timestamp next
-  auto next = now + interval;
-
-  while (true)
-  {
-    // Execute code
-    onButtonPressedTimer();
-
-    yield();
-    // Sleep until next
-    std::this_thread::sleep_until(next);
-    // Update next
-    next += interval;
-  }
 }
