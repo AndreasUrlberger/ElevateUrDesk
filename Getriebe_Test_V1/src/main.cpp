@@ -114,5 +114,6 @@ void setup()
 
 void loop()
 {
-
+  bool receiveMessage{};
+  auto message = communication->receiveMessage(receiveMessage);
 }
