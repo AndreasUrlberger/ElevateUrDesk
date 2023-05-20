@@ -1,44 +1,99 @@
 #include "DeskMotor.hpp"
 
-void DeskMotor::setup()
+#include <chrono>
+#include <thread>
+#include <esp_task_wdt.h>
+
+DeskMotor *DeskMotor::instance;
+hw_timer_t *DeskMotor::timerHandle;
+
+void IRAM_ATTR onDeskMotorTimer()
 {
-    // Powering on the motor controller by turning on the relay(s) in the right order
-    // SPI communication with motor controller
-    deskMotor.setMaxSpeed(maxSpeed);
-    deskMotor.setAcceleration(maxAcceleration);
-    Serial.printf("Main motor initialized");
+    DeskMotor::instance->dueTaskIterations.fetch_add(1);
 }
 
-void DeskMotor::run(int targetPosition, int newSpeed) // has to run on different core so that it is non-blocking ?!?
+DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
-    // set target position
+    Serial.println("DeskMotor constructor called.");
+    instance = this;
+    deskMotor.setCurrentPosition(0);
+    deskMotor.setMaxSpeed(maxSpeed);
+    deskMotor.setAcceleration(maxAcceleration);
 
-    // newSpeed is the computed speed to resync the two gearboxes
+    startTimer();
 
-    // debug mode
-    if (DebugMode == true)
-    {
-        Serial.printf("Target position %d set\n", targetPosition);
-    }
+    Serial.printf("Main motor initialized\n");
+}
 
-    // run motor until target is reached
-    if (deskMotor.distanceToGo() != 0)
+DeskMotor::~DeskMotor()
+{
+}
+
+void DeskMotor::step()
+{
+    if (isRunning)
     {
         deskMotor.run();
     }
 
-    // debug mode
-    if (DebugMode == true)
+    iterationCounter++;
+    if (iterationCounter >= skippedStepsUpdateIteration)
     {
-        Serial.println("DeskMotor stopped");
-    }
+        iterationCounter = 0;
 
-    // if GearboxRun == false, run stop command of gearbox
+        // Subtract skipped steps from current position
+        const int skippedSteps = getMissingSteps();
+        deskMotor.fixMissingSteps(skippedSteps);
+
+        // Update to new target position
+        deskMotor.moveTo(targetPosition);
+    }
 }
 
-void DeskMotor::getSkippedSteps()
+void DeskMotor::runTask()
 {
-    // get skipped steps from motor controller
+    Serial.println("RunTask started");
+
+    esp_task_wdt_init(UINT32_MAX, false);
+    esp_task_wdt_delete(NULL);
+
+    Serial.println("WDT diabled on core 1");
+
+    while (true)
+    {
+        if (dueTaskIterations.load() > 0)
+        {
+            dueTaskIterations.fetch_sub(1);
+            step();
+        }
+    }
+}
+
+void DeskMotor::startTimer()
+{
+    // Create new task to handle the timer interrupt and start the desk motor task.
+    Serial.println("Start timer/motor task.");
+    xTaskCreatePinnedToCore(
+        [](void *param)
+        {
+            // Runs on core 0.
+            Serial.println("DeskMotorTimerTask is running on core " + String(xPortGetCoreID()) + ".");
+
+            // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
+            DeskMotor::timerHandle = timerBegin(0, 80, true);
+            timerAttachInterrupt(DeskMotor::timerHandle, &onDeskMotorTimer, true);
+            timerAlarmWrite(DeskMotor::timerHandle, iterationIntervalUS, true);
+            timerAlarmEnable(DeskMotor::timerHandle);
+            Serial.println("Just started timer.");
+
+            DeskMotor::instance->runTask();
+        },
+        "DeskMotorTimerTask", // Task name
+        10000,                // Stack size (bytes)
+        NULL,                 // Parameter
+        configMAX_PRIORITIES, // Task priority
+        NULL,                 // Task handle
+        0);                   // Core where the task should run
 }
 
 void DeskMotor::setMaxAcceleration(const float newMaxAcceleration)
@@ -51,4 +106,146 @@ void DeskMotor::setMaxSpeed(const float newMaxSpeed)
 {
     maxSpeed = newMaxSpeed;
     deskMotor.setMaxSpeed(maxSpeed);
+}
+
+long DeskMotor::getCurrentPosition()
+{
+    return deskMotor.currentPosition();
+}
+
+void DeskMotor::setNewTargetPosition(const long newTargetPosition)
+{
+    targetPosition = constrain(newTargetPosition, minSteps, maxSteps);
+    // TODO Debug only, remove.
+    // deskMotor.moveTo(targetPosition);
+}
+
+void DeskMotor::addToTargetPosition(const long stepsToAdd)
+{
+    targetPosition = constrain(targetPosition + stepsToAdd, minSteps, maxSteps);
+}
+
+void DeskMotor::start()
+{
+    isRunning = true;
+}
+
+void DeskMotor::stop()
+{
+    isRunning = false;
+}
+
+void DeskMotor::addSkippedSteps(const int stepsToAdd)
+{
+    // Add the number steps atomically as the motor might reset it to 0.
+    skippedSteps.fetch_add(stepsToAdd);
+}
+
+int DeskMotor::getMissingSteps()
+{
+    // Atomically replace the number of skipped steps as another thread might add to it.
+    return skippedSteps.exchange(0);
+}
+
+void DeskMotor::setCurrentPosition(const long newPosition)
+{
+    deskMotor.setCurrentPosition(newPosition);
+}
+
+void DeskMotor::moveUp()
+{
+    const bool isMovingDownwards = deskMotor.distanceToGo() < 0;
+    if (isMovingDownwards)
+    {
+        // The motor is currently moving downwards, therefore, do nothing.
+        return;
+    }
+
+    digitalWrite(18, HIGH);
+
+    // Calculate target position based on current position and speed.
+    const float currentSpeed = deskMotor.speed();
+    const long currentPosition = deskMotor.currentPosition();
+    // Serial.print("currentPosition: ");
+    // Serial.println(currentPosition);
+    // Serial.print("currentSpeed: ");
+    // Serial.println(currentSpeed);
+
+    const float maxPotAcceleration = maxAcceleration * moveInputIntervalMS / 1000;
+    const float theoreticalEndSpeed = currentSpeed + maxPotAcceleration;
+
+    // Serial.print("maxPotAcceleration: ");
+    // Serial.println(maxPotAcceleration);
+    // Serial.print("theorEndSpeed: ");
+    // Serial.println(theoreticalEndSpeed);
+
+    float actualEndSpeed;
+    float totalSteps = 0;
+
+    if (theoreticalEndSpeed > maxSpeed)
+    {
+        // Serial.println("Max Speed.");
+        // Speed is capped.
+        actualEndSpeed = maxSpeed;
+        // What percentage of time the acceleration was active for?
+        const float activeAccelerationPercentage = (theoreticalEndSpeed - actualEndSpeed) / maxPotAcceleration;
+
+        // Triangular rise till max speed (platoe).
+        const float actualAcceleration = maxPotAcceleration * activeAccelerationPercentage;
+        const float accelerationTime = moveInputIntervalMS * activeAccelerationPercentage / 1000;
+        const float triangleRiseSteps = 0.5 * actualAcceleration * accelerationTime;
+        // Rectangular plateau at max speed (platoe).
+        const float plateauTime = (moveInputIntervalMS / 1000.0f - accelerationTime);
+        const float rectangleSteps = actualAcceleration * plateauTime;
+
+        totalSteps = triangleRiseSteps + rectangleSteps;
+    }
+    else
+    {
+        // Speed is not capped.
+        actualEndSpeed = theoreticalEndSpeed;
+        const float activeAccelerationPercentage = 1;
+
+        // Triangular rise till.
+        const float triangleRiseSteps = 0.5 * maxPotAcceleration * moveInputIntervalMS / 1000;
+
+        totalSteps = triangleRiseSteps;
+    }
+
+    // Base rectangle.
+    const float baseRectangleSteps = currentSpeed * moveInputIntervalMS / 1000;
+
+    // Serial.print("acceleration part: ");
+    // Serial.println(totalSteps);
+    // Serial.print("baseRectangle: ");
+    // Serial.println(baseRectangleSteps);
+
+    // Triangular decrease till halt.
+    const float decelerationTime = actualEndSpeed / maxAcceleration; // seconds
+    const float triangleFallSteps = 0.5 * actualEndSpeed * decelerationTime;
+
+    // Serial.print("DecelerationTime ");
+    // Serial.println(decelerationTime);
+    // Serial.print("triangleFallSteps: ");
+    // Serial.println(triangleFallSteps);
+
+    totalSteps += baseRectangleSteps + triangleFallSteps;
+    const float bufferSteps = totalSteps * upDownStepBufferFactor;
+    const float deltaSteps = max(10.0f, ceil(totalSteps + bufferSteps));
+    long targetPosition = currentPosition + deltaSteps;
+
+    // Set target position.
+    setNewTargetPosition(targetPosition);
+    // Serial.print("DeltaPosition: ");
+    // Serial.println(deltaSteps);
+    // Serial.print("TargetPosition: ");
+    // Serial.println(targetPosition);
+    // Serial.println();
+    // digitalWrite(18, LOW);
+}
+
+void DeskMotor::moveDown()
+{
+    // Calculate target position based on current position and speed.
+    // Set target position.
 }

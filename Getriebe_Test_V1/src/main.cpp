@@ -7,104 +7,113 @@
 #include "Pinout.hpp"
 #include "Communication.hpp"
 #include "DebugControls.hpp"
+#include "TextInput.hpp"
+#include <esp_task_wdt.h>
+#include <chrono>
+#include <thread>
 
-void receiveEvent(int numBytes);
-void requestEvent();
+static constexpr const char *const gearboxName = "left";
+static constexpr float gearboxSensorHeight = 0.0f;
+static constexpr float gearboxMathematicalHeight = 0.0f;
 
-int timerMs = 5000; // Number of milliseconds the gearbox waits until stopping
+Communication *communication;
 
-u_int8_t requestString[32]{};
-u_int8_t replyString[32]{};
+#pragma region DEBUG
+hw_timer_t *debugButtonTimerHandle{nullptr};
+// Should be same as in DeskMotor.
+long moveInputIntervalMS{20};
+volatile bool debugButtonPressed{false};
 
-hw_timer_t *timer = NULL;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-
-void IRAM_ATTR onTimer()
+void IRAM_ATTR onButtonPressedTimer()
 {
-  portENTER_CRITICAL_ISR(&timerMux);
-  GearboxRun = false;
-  portEXIT_CRITICAL_ISR(&timerMux);
+  if (debugButtonPressed)
+  {
+    digitalWrite(5, HIGH);
+    communication->moveUp();
+    digitalWrite(5, LOW);
+  }
 }
 
-void setup()
+// only for debug purposes, TODO: remove later
+ICACHE_RAM_ATTR void buttonPress()
 {
-  int gearboxID = 1; // ID is 1 (left) or 2 (right)
-  uint8_t GearboxAddress{};
-  if (gearboxID == 1) // GearboxName is defined, used for prints
+  // LOW is high for this button.
+  bool isPressed = digitalRead(DebugButton1) == LOW;
+  debugButtonPressed = isPressed;
+
+  // This does not work as expected because the button bounces.
+  if (isPressed)
   {
-    std::string GearboxName = "left";
-    GearboxAddress = 0x50; // I2C address of left board
+    // communication->moveTo(10000);
+    // Start timer
+    // timerRestart(debugButtonTimerHandle);
   }
   else
   {
-    std::string GearboxName = "right";
-    GearboxAddress = 0x51; // I2C address of right board
+    // Stop current task
+    // timerStop(debugButtonTimerHandle);
   }
+}
 
-  Wire.begin(GearboxAddress);
+class MainLogUtil
+{
+private:
+  MainLogUtil() = delete;
+  ~MainLogUtil() = delete;
 
-  Wire.onReceive(receiveEvent);
-  Wire.onRequest(requestEvent);
+public:
+  static void logStuff()
+  {
+    Gearbox *gearbox = &(communication->gearbox);
+    DeskMotor *deskMotor = &(gearbox->deskMotor);
+    // Print if deskMotor is running
+    Serial.print("DeskMotor is running: ");
+    Serial.println(deskMotor->isRunning);
+    // Print current target position
+    Serial.print("Current target position: ");
+    Serial.println(deskMotor->deskMotor.targetPosition());
+    // Print current position
+    Serial.print("Current position: ");
+    Serial.println(deskMotor->deskMotor.currentPosition());
+    // Print distance to go
+    Serial.print("Distance to go: ");
+    Serial.println(deskMotor->deskMotor.distanceToGo());
+  }
+};
+#pragma endregion DEBUG
+
+void setup()
+{
   Serial.begin(115200);
+  esp_task_wdt_init(UINT32_MAX, false);
+  esp_task_wdt_delete(NULL);
 
-  timer = timerBegin(0, 80, true);
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, timerMs * 1000, true);
-  timerAlarmEnable(timer);
+  Serial.println("WDT diabled on core 0");
+
+  // Cannot initialize earlier as the Serial.begin() call is required.
+  communication = new Communication(gearboxName, gearboxSensorHeight, gearboxMathematicalHeight);
+
+  // TODO Debug only
+  pinMode(18, OUTPUT);
+  pinMode(19, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(DebugButton1, INPUT_PULLUP); // set the digital pin as output
+
+  // Initialize timer.
+  // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 8000, we are dividing the base clock frequency by 8000, resulting in a timer tick frequency of 10 kHz (80 MHz / 8000 = 10 kHz).
+  debugButtonTimerHandle = timerBegin(1, 8000, true);
+  timerAttachInterrupt(debugButtonTimerHandle, &onButtonPressedTimer, true);
+  timerAlarmWrite(debugButtonTimerHandle, 100, true); // Every 10 ms.
+  timerAlarmEnable(debugButtonTimerHandle);
+  // timerStop(debugButtonTimerHandle);
+
+  attachInterrupt(digitalPinToInterrupt(DebugButton1), buttonPress, CHANGE);
+
+  Serial.println("Task1 is running on core " + String(xPortGetCoreID()) + ".");
 }
 
 void loop()
 {
-  delay(1000);
-  if (DebugMode == true)
-  {
-    DebugControls::mainMenu();
-  }
-  /*
-  if (GearboxRun == false)
-  {
-    Serial.println("Gearbox Stopped, restarting timer");
-    GearboxRun = true;
-    timerAlarmWrite(timer, timerMs * 1000, true);
-    timerAlarmEnable(timer);
-  }
-  else
-  {
-    Serial.println("Gearbox still running");
-  }
-  */
-}
-
-void receiveEvent(int numBytes)
-{
-  // Read the message from the master board
-
-  memset(requestString, 0, 32); // Clear the requestString (all 32 bytes to 0)
-
-  int i = 0;
-  while (Wire.available() > 0)
-  {
-    requestString[i] = Wire.read();
-    i++;
-  }
-  // check if requestString is 32 bytes long
-  if (i == 31)
-  {
-    // do nothing
-  }
-  else
-  {
-    if (DebugMode == true)
-    {
-      Serial.println("Error: requestString is not 32 bytes long");
-    }
-    requestString[i] = 0xEE; // 0xEE is the code for transmission error
-  }
-  Communication::handleRequest(requestString, replyString);
-}
-
-void requestEvent()
-{
-  // Send a message back to the master board
-  Wire.write("Hello from slave board!");
+  bool receiveMessage{};
+  auto message = communication->receiveMessage(receiveMessage);
 }
