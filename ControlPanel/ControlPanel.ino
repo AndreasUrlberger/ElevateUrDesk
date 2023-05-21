@@ -5,13 +5,14 @@
 // Requires FreeRTOS by Richard Barry.
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include <functional>
 
 #define Uart Serial1
 // Using micropython addresses.
 static const uint8_t BUTTON_PIN{29u};
 static const uint8_t NUMBER_OF_ENCODER_SLOTS{11u};
 static const uint16_t ENCODER_RESOLUTION{4096u};
-static const uint16_t ENCODER_ANGLE_OFFSET{3946u}; // - 50
+static const uint16_t ENCODER_ANGLE_OFFSET{3946u}; // - 150
 // Hysteresis for the encoder slots in percent.
 static const float ENCODER_SLOT_HYSTERESIS{0.05f};
 
@@ -23,18 +24,348 @@ uint16_t currentEndcoderAngle{0u};
 // Mutex for UART communication.
 SemaphoreHandle_t uartMutex;
 
-bool currentButtonState{false};
-
-// Interrupt routine for the click of a button.
-void buttonPress()
+#pragma region Button
+class Button
 {
-  noInterrupts();
-  bool isPressed = digitalRead(BUTTON_PIN) == LOW;
-  if(currentButtonState != isPressed){
-    currentButtonState = isPressed;
-    sendButtonStateChange(0u, isPressed);
+  // Decision tree for button events.
+  //
+  //                                   NotPressed
+  //                                       |
+  //                                    Pressed
+  //                                       |
+  //             +-------------------------+-------------------------+
+  //             |                         |                         |
+  //           <50ms                     <750ms                    >750ms
+  //             |                         |                         |
+  //         Released                  Released                      |
+  //             |                         |                         |
+  //         NO_CLICK                      |                     LONG_CLICK
+  //                                       |
+  //             +-------------------------+-------------------------+
+  //             |                                                   |
+  //          <300ms                                              >300ms
+  //             |                                                   |
+  //         Pressed                                            SINGLE_CLICK
+  //             |
+  //             +-------------------------+-------------------------+
+  //             |                         |                         |
+  //           <50ms                     >50ms                    >750ms
+  //             |                         |                         |
+  //         Released                  Released                DOUBLE_HOLD_CLICK
+  //             |                         |
+  //        SINGLE_CLICK              DOUBLE_CLICK
+
+  static const uint32_t MIN_CLICK_DURATION{50u};
+  static const uint32_t MIN_LONG_CLICK_DURATION{750u};
+  static const uint32_t MAX_TIME_BETWEEN_CLICKS{300u};
+
+public:
+  class ButtonEvents
+  {
+  private:
+    ButtonEvents() = delete;
+    ~ButtonEvents() = delete;
+
+  public:
+    static const uint8_t SINGLE_CLICK = 0;
+    static const uint8_t DOUBLE_CLICK = 1;
+    static const uint8_t LONG_CLICK = 2;
+    static const uint8_t START_DOUBLE_HOLD_CLICK = 3;
+    static const uint8_t END_DOUBLE_HOLD_CLICK = 4;
+    static const uint8_t NO_EVENT = 5;
+  };
+  typedef uint8_t ButtonEvent;
+
+private:
+  class ButtonStates
+  {
+  public:
+    static const uint8_t NOT_PRESSED = 0;
+    static const uint8_t PRESSED = 1;
+    static const uint8_t DOUBLE_CLICK_DECISION = 2;
+    static const uint8_t PRESSED_SECOND = 3;
+    static const uint8_t DOUBLE_HOLD = 4;
+    static const uint8_t LONG_CLICK = 5;
+
+    ButtonStates() = delete;
+    ~ButtonStates() = delete;
+  };
+  typedef uint8_t ButtonState;
+
+  uint32_t lastActionTime = 0u;
+  bool buttonPressedLastIteration = false;
+  ButtonState state = ButtonStates::NOT_PRESSED;
+  const uint8_t pin;
+
+  using StateTransitionFunction = std::function<ButtonEvent(uint32_t, bool, ButtonState &)>;
+  // Directly initialize the table.
+  static inline const StateTransitionFunction stateTransitionTable[6]{
+      // NOT_PRESSED state (low).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (isHigh)
+        {
+          newState = ButtonStates::PRESSED;
+          return ButtonEvents::NO_EVENT;
+        }
+        else
+        {
+          newState = ButtonStates::NOT_PRESSED;
+          return ButtonEvents::NO_EVENT;
+        }
+      },
+
+      // PRESSED state (high).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (time > MIN_LONG_CLICK_DURATION)
+        {
+          if (isHigh)
+          {
+            // EVENT: LONG_CLICK
+            newState = ButtonStates::LONG_CLICK;
+            return ButtonEvents::LONG_CLICK;
+          }
+          else
+          {
+            // EVENT: LONG_CLICK
+            newState = ButtonStates::NOT_PRESSED;
+            return ButtonEvents::LONG_CLICK;
+          }
+        }
+        else if (time > MIN_CLICK_DURATION)
+        {
+          if (isHigh)
+          {
+            // No change to current state.
+            newState = ButtonStates::PRESSED;
+            return ButtonEvents::NO_EVENT;
+          }
+          else
+          {
+            newState = ButtonStates::DOUBLE_CLICK_DECISION;
+            return ButtonEvents::NO_EVENT;
+          }
+        }
+        else
+        {
+          if (isHigh)
+          {
+            // No change to current state.
+            newState = ButtonStates::PRESSED;
+            return ButtonEvents::NO_EVENT;
+          }
+          else
+          {
+            // Too short click.
+            newState = ButtonStates::NOT_PRESSED;
+            return ButtonEvents::NO_EVENT;
+          }
+        }
+      },
+
+      // DOUBLE_CLICK_DECISION state (low).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (time > MAX_TIME_BETWEEN_CLICKS)
+        {
+          // EVENT: SINGLE_CLICK
+          if (isHigh)
+          {
+            // One could argue that this should be either a SINGLE_CLICK or the start of a DOUBLE_CLICK.
+            newState = ButtonStates::PRESSED;
+          }
+          else
+          {
+            newState = ButtonStates::NOT_PRESSED;
+          }
+          return ButtonEvents::SINGLE_CLICK;
+        } // Could add requirement for the button to be released for a minimum time here.
+        else
+        {
+          if (isHigh)
+          {
+            newState = ButtonStates::PRESSED_SECOND;
+            return ButtonEvents::NO_EVENT;
+          }
+          else
+          {
+            // No change to current state.
+            newState = ButtonStates::DOUBLE_CLICK_DECISION;
+            return ButtonEvents::NO_EVENT;
+          }
+        }
+      },
+
+      // PRESSED_SECOND state (high).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (time > MIN_LONG_CLICK_DURATION)
+        {
+          if (isHigh)
+          {
+            // EVENT: START_DOUBLE_HOLD_CLICK
+            newState = ButtonStates::DOUBLE_HOLD;
+            return ButtonEvents::START_DOUBLE_HOLD_CLICK;
+          }
+          else
+          {
+            // One could argue that this should be either a START_DOUBLE_HOLD_CLICK event directly followed by a END_DOUBLE_HOLD_CLICK event or a DOUBLE_CLICK event. I is impossible to tell if the button was released before or after the threshold, therefore, we chose the DOUBLE_CLICK, as two instantaneous events are undesireable.
+            // EVENT: DOUBLE_CLICK
+            newState = ButtonStates::NOT_PRESSED;
+            return ButtonEvents::DOUBLE_CLICK;
+          }
+        }
+        else if (time > MIN_CLICK_DURATION)
+        {
+          if (isHigh)
+          {
+            // No change to current state.
+            newState = ButtonStates::PRESSED_SECOND;
+            return ButtonEvents::NO_EVENT;
+          }
+          else
+          {
+            // EVENT: DOUBLE_CLICK
+            newState = ButtonStates::NOT_PRESSED;
+            return ButtonEvents::DOUBLE_CLICK;
+          }
+        }
+        else
+        {
+          if (isHigh)
+          {
+            // No change to current state.
+            newState = ButtonStates::PRESSED_SECOND;
+            return ButtonEvents::NO_EVENT;
+          }
+          else
+          {
+            // Too short click.
+            newState = ButtonStates::NOT_PRESSED;
+            return ButtonEvents::NO_EVENT;
+          }
+        }
+      },
+
+      // DOUBLE_HOLD state (low).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (isHigh)
+        {
+          // No change to current state.
+          newState = ButtonStates::DOUBLE_HOLD;
+          return ButtonEvents::NO_EVENT;
+        }
+        else
+        {
+          // EVENT: END_DOUBLE_HOLD_CLICK
+          newState = ButtonStates::NOT_PRESSED;
+          return ButtonEvents::END_DOUBLE_HOLD_CLICK;
+        }
+      },
+
+      // LONG_CLICK state (high).
+      [](uint32_t time, bool isHigh, ButtonState &newState) -> ButtonEvent
+      {
+        if (isHigh)
+        {
+          // No change to current state.
+          newState = ButtonStates::LONG_CLICK;
+          return ButtonEvents::NO_EVENT;
+        }
+        else
+        {
+          newState = ButtonStates::NOT_PRESSED;
+          return ButtonEvents::NO_EVENT;
+        }
+      },
+  };
+
+public:
+  Button(uint8_t pin) : pin(pin)
+  {
   }
-  interrupts();
+
+  void setup()
+  {
+    pinMode(pin, INPUT_PULLUP);
+  }
+
+  ButtonEvent transition()
+  {
+    const bool isPressed = digitalRead(pin) == LOW;
+    const uint32_t timestamp = millis();
+
+    if (isPressed != buttonPressedLastIteration)
+    {
+      Serial.print("changed level to ");
+      Serial.println(isPressed ? "HIGH" : "LOW");
+    }
+
+    ButtonState oldState = state;
+    ButtonEvent buttonEvent = stateTransitionTable[state](timestamp - lastActionTime, isPressed, state);
+
+    if (oldState != state)
+    {
+      Serial.print("New Button state: ");
+      // Print name of new state.
+      switch (state)
+      {
+      case ButtonStates::NOT_PRESSED:
+        Serial.println("NOT_PRESSED");
+        break;
+      case ButtonStates::PRESSED:
+        Serial.println("PRESSED");
+        break;
+      case ButtonStates::DOUBLE_CLICK_DECISION:
+        Serial.println("DOUBLE_CLICK_DECISION");
+        break;
+      case ButtonStates::PRESSED_SECOND:
+        Serial.println("PRESSED_SECOND");
+        break;
+      case ButtonStates::DOUBLE_HOLD:
+        Serial.println("DOUBLE_HOLD");
+        break;
+      case ButtonStates::LONG_CLICK:
+        Serial.println("LONG_CLICK");
+        break;
+      default:
+        Serial.println("UNKNOWN");
+        break;
+      }
+    }
+
+    if (isPressed != buttonPressedLastIteration)
+    {
+      lastActionTime = timestamp;
+      buttonPressedLastIteration = isPressed;
+    }
+
+    return buttonEvent;
+  }
+};
+#pragma endregion Button
+
+static const size_t NUMBER_OF_BUTTONS{1u};
+static Button buttons[NUMBER_OF_BUTTONS]{Button(29u) /*, Button(1u), Button(2u), Button(3u), Button(4u)*/};
+static Button::ButtonEvent buttonEvents[NUMBER_OF_BUTTONS]{Button::ButtonEvents::NO_EVENT /* Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT*/};
+
+void setupButtons()
+{
+  for (size_t i = 0u; i < NUMBER_OF_BUTTONS; i++)
+  {
+    buttons[i].setup();
+  }
+}
+
+void loopButtons()
+{
+  // Read the current state of the buttons and check if they have changed.
+  for (size_t i = 0u; i < NUMBER_OF_BUTTONS; i++)
+  {
+    buttonEvents[i] = buttons[i].transition();
+  }
 }
 
 void sendUartBytes(const char *buffer, size_t length)
@@ -49,20 +380,36 @@ void sendUartBytes(const char *buffer, size_t length)
   xSemaphoreGive(uartMutex);
 }
 
-void sendButtonStateChange(uint8_t button, bool state)
+void sendButtonStateChange()
 {
   // Send through UART to general controller.
-  static const uint8_t msgLength{5u};
-  char buffer[msgLength + 1]{0};
-  buffer[0] = msgLength;
-  buffer[1] = 'B';
-  buffer[2] = button;
-  buffer[3] = 'S';
-  buffer[4] = static_cast<uint8_t>(state);
-  // To check if the received message length is wrong.
-  buffer[5] = '\x00';
+  const size_t maxMsgLength{4u * NUMBER_OF_BUTTONS + 2u};
+  char buffer[maxMsgLength]{0u};
+  uint8_t numEvents{0u};
 
-  size_t bytesWritten{0};
+  for (size_t i = 0u; i < NUMBER_OF_BUTTONS; i++)
+  {
+    Button::ButtonEvent event = buttonEvents[i];
+    if (event != Button::ButtonEvents::NO_EVENT)
+    {
+      buffer[4u * i + 1u] = 'B';
+      buffer[4u * i + 2u] = i;
+      buffer[4u * i + 3u] = 'S';
+      buffer[4u * i + 4u] = event;
+
+      numEvents++;
+    }
+  }
+
+  if (numEvents == 0u) // Dont want to send an empty and unnecessary message.
+  {
+    return;
+  }
+
+  const uint8_t msgLength = UINT8_C(4) * numEvents + UINT8_C(1);
+  buffer[0u] = msgLength;
+  // To check if the received message length is wrong.
+  buffer[msgLength] = '\x00';
 
   sendUartBytes(buffer, msgLength + 1);
 }
@@ -132,10 +479,7 @@ void setup()
   uartMutex = xSemaphoreCreateMutex();
   Uart.begin(115200);
 
-  // Setup BUTTON_PIN pin for input.
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  // Attach interrupt to button.
-  attachInterrupt(BUTTON_PIN, buttonPress, CHANGE);
+  setupButtons();
 
   Wire.begin();
 
@@ -152,7 +496,7 @@ void setup()
 uint32_t iterationCounter = 0;
 void loop()
 {
-  if (iterationCounter % 10 == 0)
+  if (iterationCounter % 5 == 0)
   {
     bool isConnected = encoder.isConnected();
     if (!isConnected)
@@ -170,5 +514,8 @@ void loop()
   }
   iterationCounter++;
 
-  delay(2);
+  loopButtons();
+  sendButtonStateChange();
+
+  delay(1);
 }

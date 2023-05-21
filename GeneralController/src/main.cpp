@@ -3,11 +3,67 @@
 
 #define Uart Serial2
 
+class ButtonEvents
+{
+private:
+  ButtonEvents() = delete;
+  ~ButtonEvents() = delete;
+
+public:
+  static const uint8_t SINGLE_CLICK = 0;
+  static const uint8_t DOUBLE_CLICK = 1;
+  static const uint8_t LONG_CLICK = 2;
+  static const uint8_t START_DOUBLE_HOLD_CLICK = 3;
+  static const uint8_t END_DOUBLE_HOLD_CLICK = 4;
+  static const uint8_t NO_EVENT = 5;
+};
+typedef uint8_t ButtonEvent;
+
 void setup()
 {
   // Initialize Serial communication
   Serial.begin(115200);
   Uart.begin(115200, SERIAL_8N1, 16, 17);
+}
+
+void processButtonMessage(const char *message, size_t messageLength)
+{
+  const size_t numEvents = messageLength / 4;
+
+  // Iterate over all events in the message
+  for (size_t i = 0u; i < numEvents; i++)
+  {
+    const uint8_t buttonId = static_cast<uint8_t>(message[1u + (i * 4u)]);
+    const uint8_t buttonEvent = static_cast<uint8_t>(message[3u + (i * 4u)]);
+
+    Serial.print("Button ");
+    Serial.print(buttonId);
+
+    switch (buttonEvent)
+    {
+    case ButtonEvents::SINGLE_CLICK:
+      Serial.println(" single click");
+      break;
+    case ButtonEvents::DOUBLE_CLICK:
+      Serial.println(" double click");
+      break;
+    case ButtonEvents::LONG_CLICK:
+      Serial.println(" long click");
+      break;
+    case ButtonEvents::START_DOUBLE_HOLD_CLICK:
+      Serial.println(" start double hold click");
+      break;
+    case ButtonEvents::END_DOUBLE_HOLD_CLICK:
+      Serial.println(" end double hold click");
+      break;
+    case ButtonEvents::NO_EVENT: // Should never happen
+      Serial.println(" no event");
+      break;
+    default:
+      Serial.println(" unknown event");
+      break;
+    }
+  }
 }
 
 std::string controlPanelMsgBuffer = "";
@@ -49,10 +105,7 @@ bool readControlPanelMessage()
     switch (controlPanelMsg[0u])
     {
     case 'B':
-      Serial.print("Button: ");
-      Serial.print(static_cast<uint32_t>(controlPanelMsg[1u]));
-      Serial.print(" State: ");
-      Serial.println(static_cast<uint32_t>(controlPanelMsg[3u]));
+      processButtonMessage(controlPanelMsg, controlPanelMsgBuffer.length());
       break;
     case 'E':
       Serial.print("Encoder: ");
