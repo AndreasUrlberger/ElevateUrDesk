@@ -16,6 +16,10 @@ public:
   static const uint8_t START_DOUBLE_HOLD_CLICK = 3;
   static const uint8_t END_DOUBLE_HOLD_CLICK = 4;
   static const uint8_t NO_EVENT = 5;
+
+  // Only in drive mode.
+  static const uint8_t BUTTON_PRESSED = 6;
+  static const uint8_t BUTTON_RELEASED = 7;
 };
 typedef uint8_t ButtonEvent;
 
@@ -59,7 +63,13 @@ void processButtonMessage(const char *message, size_t messageLength)
     case ButtonEvents::NO_EVENT: // Should never happen
       Serial.println(" no event");
       break;
-    default:
+    case ButtonEvents::BUTTON_PRESSED:
+      Serial.println(" pressed");
+      break;
+    case ButtonEvents::BUTTON_RELEASED:
+      Serial.println(" released");
+      break;
+    default: // Should never happen either.
       Serial.println(" unknown event");
       break;
     }

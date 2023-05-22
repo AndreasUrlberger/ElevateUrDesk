@@ -59,6 +59,8 @@ class Button
   static const uint32_t MIN_LONG_CLICK_DURATION{750u};
   static const uint32_t MAX_TIME_BETWEEN_CLICKS{300u};
 
+  static const uint32_t NUM_SMOOTHING_ITERATIONS{5u};
+
 public:
   class ButtonEvents
   {
@@ -73,6 +75,10 @@ public:
     static const uint8_t START_DOUBLE_HOLD_CLICK = 3;
     static const uint8_t END_DOUBLE_HOLD_CLICK = 4;
     static const uint8_t NO_EVENT = 5;
+
+    // Only in drive mode.
+    static const uint8_t BUTTON_PRESSED = 6;
+    static const uint8_t BUTTON_RELEASED = 7;
   };
   typedef uint8_t ButtonEvent;
 
@@ -96,6 +102,9 @@ private:
   bool buttonPressedLastIteration = false;
   ButtonState state = ButtonStates::NOT_PRESSED;
   const uint8_t pin;
+  bool isDriveMode{false};
+  std::array<bool, NUM_SMOOTHING_ITERATIONS> buttonHistory{false};
+  size_t buttonHistoryIndex{0u};
 
   using StateTransitionFunction = std::function<ButtonEvent(uint32_t, bool, ButtonState &)>;
   // Directly initialize the table.
@@ -295,45 +304,41 @@ public:
   ButtonEvent transition()
   {
     const bool isPressed = digitalRead(pin) == LOW;
+    buttonHistory[buttonHistoryIndex] = isPressed;
+    buttonHistoryIndex = (buttonHistoryIndex + 1) % buttonHistory.size();
     const uint32_t timestamp = millis();
+    ButtonEvent buttonEvent{};
 
-    if (isPressed != buttonPressedLastIteration)
+    if (isDriveMode)
     {
-      Serial.print("changed level to ");
-      Serial.println(isPressed ? "HIGH" : "LOW");
-    }
-
-    ButtonState oldState = state;
-    ButtonEvent buttonEvent = stateTransitionTable[state](timestamp - lastActionTime, isPressed, state);
-
-    if (oldState != state)
-    {
-      Serial.print("New Button state: ");
-      // Print name of new state.
-      switch (state)
+      // Calculate average of button history.
+      uint8_t sum = 0;
+      for (size_t i = 0; i < buttonHistory.size(); i++)
       {
-      case ButtonStates::NOT_PRESSED:
-        Serial.println("NOT_PRESSED");
-        break;
-      case ButtonStates::PRESSED:
-        Serial.println("PRESSED");
-        break;
-      case ButtonStates::DOUBLE_CLICK_DECISION:
-        Serial.println("DOUBLE_CLICK_DECISION");
-        break;
-      case ButtonStates::PRESSED_SECOND:
-        Serial.println("PRESSED_SECOND");
-        break;
-      case ButtonStates::DOUBLE_HOLD:
-        Serial.println("DOUBLE_HOLD");
-        break;
-      case ButtonStates::LONG_CLICK:
-        Serial.println("LONG_CLICK");
-        break;
-      default:
-        Serial.println("UNKNOWN");
-        break;
+        sum += buttonHistory[i];
       }
+
+      const bool isSmoothPressed = sum > (buttonHistory.size() / 2);
+
+      if (isSmoothPressed && (state == ButtonStates::NOT_PRESSED))
+      {
+        state = ButtonStates::PRESSED;
+        buttonEvent = ButtonEvents::BUTTON_PRESSED;
+      }
+      else if (!isSmoothPressed && (state == ButtonStates::PRESSED))
+      {
+        state = ButtonStates::NOT_PRESSED;
+        buttonEvent = ButtonEvents::BUTTON_RELEASED;
+      }
+      else
+      {
+        buttonEvent = ButtonEvents::NO_EVENT;
+      }
+    }
+    else
+    {
+      const ButtonState oldState = state;
+      buttonEvent = stateTransitionTable[state](timestamp - lastActionTime, isPressed, state);
     }
 
     if (isPressed != buttonPressedLastIteration)
@@ -344,12 +349,22 @@ public:
 
     return buttonEvent;
   }
+
+  void toggleDriveMode(bool isDriveMode)
+  {
+    this->isDriveMode = isDriveMode;
+
+    const bool currentButtonState = digitalRead(pin) == LOW;
+
+    // Exit any current state.
+    state = currentButtonState ? ButtonStates::PRESSED : ButtonStates::NOT_PRESSED;
+  }
 };
 #pragma endregion Button
 
-static const size_t NUMBER_OF_BUTTONS{1u};
-static Button buttons[NUMBER_OF_BUTTONS]{Button(29u) /*, Button(1u), Button(2u), Button(3u), Button(4u)*/};
-static Button::ButtonEvent buttonEvents[NUMBER_OF_BUTTONS]{Button::ButtonEvents::NO_EVENT /* Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT*/};
+static const size_t NUMBER_OF_BUTTONS{2u};
+static Button buttons[NUMBER_OF_BUTTONS]{Button(29u), Button(28u) /*, Button(2u), Button(3u), Button(4u)*/};
+static Button::ButtonEvent buttonEvents[NUMBER_OF_BUTTONS]{Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT /*, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT, Button::ButtonEvents::NO_EVENT*/};
 
 void setupButtons()
 {
@@ -357,6 +372,9 @@ void setupButtons()
   {
     buttons[i].setup();
   }
+
+  // TODO DEBUG only.
+  buttons[0].toggleDriveMode(true);
 }
 
 void loopButtons()
@@ -387,15 +405,16 @@ void sendButtonStateChange()
   char buffer[maxMsgLength]{0u};
   uint8_t numEvents{0u};
 
-  for (size_t i = 0u; i < NUMBER_OF_BUTTONS; i++)
+  for (size_t buttonIndex = 0u; buttonIndex < NUMBER_OF_BUTTONS; buttonIndex++)
   {
-    Button::ButtonEvent event = buttonEvents[i];
+    Button::ButtonEvent event = buttonEvents[buttonIndex];
     if (event != Button::ButtonEvents::NO_EVENT)
     {
-      buffer[4u * i + 1u] = 'B';
-      buffer[4u * i + 2u] = i;
-      buffer[4u * i + 3u] = 'S';
-      buffer[4u * i + 4u] = event;
+      // NumEvents also works as an index for the buffer.
+      buffer[4u * numEvents + 1u] = 'B';
+      buffer[4u * numEvents + 2u] = buttonIndex;
+      buffer[4u * numEvents + 3u] = 'S';
+      buffer[4u * numEvents + 4u] = event;
 
       numEvents++;
     }
