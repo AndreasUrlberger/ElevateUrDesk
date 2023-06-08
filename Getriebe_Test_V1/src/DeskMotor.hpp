@@ -19,6 +19,8 @@ private:
     std::atomic_int skippedSteps{0};
 
     int getMissingSteps();
+    // Calculates the number of steps for the given speed and the given time frame.
+    long calculateDeltaSteps(float currentSpeed);
     long moveInputIntervalMS{20};
 
     float upDownStepBufferFactor{0.1f};

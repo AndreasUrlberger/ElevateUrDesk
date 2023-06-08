@@ -161,30 +161,58 @@ void DeskMotor::moveUp()
         return;
     }
 
+    // TODO DEBUGGING ONLY
     digitalWrite(18, HIGH);
 
-    // Calculate target position based on current position and speed.
     const float currentSpeed = deskMotor.speed();
     const long currentPosition = deskMotor.currentPosition();
-    // Serial.print("currentPosition: ");
-    // Serial.println(currentPosition);
-    // Serial.print("currentSpeed: ");
-    // Serial.println(currentSpeed);
+    // Add delta steps calculated for the given speed.
+    const long targetPosition = currentPosition + calculateDeltaSteps(currentSpeed);
+
+    // Set target position.
+    setNewTargetPosition(targetPosition);
+
+    // TODO DEBUGGING ONLY
+    digitalWrite(18, LOW);
+}
+
+void DeskMotor::moveDown()
+{
+    const bool isMovingUpwards = deskMotor.distanceToGo() > 0;
+    if (isMovingUpwards)
+    {
+        // The motor is currently moving upwards, therefore, do nothing.
+        return;
+    }
+
+    // TODO DEBUGGING ONLY
+    digitalWrite(18, HIGH);
+
+    // Take the negative speed because then we can use the same calculation as for moving upwards.
+    const float currentSpeed = -deskMotor.speed();
+    const long currentPosition = deskMotor.currentPosition();
+    // Subtract delta steps calculated for the given speed to account for the inverted speed.
+    long targetPosition = currentPosition - calculateDeltaSteps(currentSpeed);
+
+    // Set target position.
+    setNewTargetPosition(targetPosition);
+
+    // TODO DEBUGGING ONLY
+    digitalWrite(18, LOW);
+}
+
+long DeskMotor::calculateDeltaSteps(float currentSpeed)
+{
+    const long currentPosition = deskMotor.currentPosition();
 
     const float maxPotAcceleration = maxAcceleration * moveInputIntervalMS / 1000;
     const float theoreticalEndSpeed = currentSpeed + maxPotAcceleration;
-
-    // Serial.print("maxPotAcceleration: ");
-    // Serial.println(maxPotAcceleration);
-    // Serial.print("theorEndSpeed: ");
-    // Serial.println(theoreticalEndSpeed);
 
     float actualEndSpeed;
     float totalSteps = 0;
 
     if (theoreticalEndSpeed > maxSpeed)
     {
-        // Serial.println("Max Speed.");
         // Speed is capped.
         actualEndSpeed = maxSpeed;
         // What percentage of time the acceleration was active for?
@@ -215,37 +243,13 @@ void DeskMotor::moveUp()
     // Base rectangle.
     const float baseRectangleSteps = currentSpeed * moveInputIntervalMS / 1000;
 
-    // Serial.print("acceleration part: ");
-    // Serial.println(totalSteps);
-    // Serial.print("baseRectangle: ");
-    // Serial.println(baseRectangleSteps);
-
     // Triangular decrease till halt.
     const float decelerationTime = actualEndSpeed / maxAcceleration; // seconds
     const float triangleFallSteps = 0.5 * actualEndSpeed * decelerationTime;
 
-    // Serial.print("DecelerationTime ");
-    // Serial.println(decelerationTime);
-    // Serial.print("triangleFallSteps: ");
-    // Serial.println(triangleFallSteps);
-
     totalSteps += baseRectangleSteps + triangleFallSteps;
     const float bufferSteps = totalSteps * upDownStepBufferFactor;
     const float deltaSteps = max(10.0f, ceil(totalSteps + bufferSteps));
-    long targetPosition = currentPosition + deltaSteps;
 
-    // Set target position.
-    setNewTargetPosition(targetPosition);
-    // Serial.print("DeltaPosition: ");
-    // Serial.println(deltaSteps);
-    // Serial.print("TargetPosition: ");
-    // Serial.println(targetPosition);
-    // Serial.println();
-    // digitalWrite(18, LOW);
-}
-
-void DeskMotor::moveDown()
-{
-    // Calculate target position based on current position and speed.
-    // Set target position.
+    return deltaSteps;
 }

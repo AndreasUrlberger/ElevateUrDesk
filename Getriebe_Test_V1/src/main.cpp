@@ -117,7 +117,6 @@ void i2cOnRequest()
   switch (i2cData[0])
   {
   case CMD_MOVE_UP:
-    Serial.println("I2C moveUp");
     // Send current position as response.
     {
       uint32_t currentPosition{1234u};
@@ -133,7 +132,6 @@ void i2cOnRequest()
     }
     break;
   case CMD_MOVE_DOWN:
-    Serial.println("I2C moveDown");
     // Send current position as response.
     {
       uint32_t currentPosition{1234u};
