@@ -40,7 +40,7 @@ public:
 
     void setMaxSpeed(const float newSpeed);
     void setMaxAcceleration(const float newAcceleration);
-    long getCurrentPosition();
+    uint32_t getCurrentPosition();
     void setNewTargetPosition(const long newTargetPosition);
     void addToTargetPosition(const long stepsToAdd);
     void setCurrentPosition(const long newPosition);
@@ -56,6 +56,4 @@ public:
 
     void moveUp();
     void moveDown();
-
-    uint32_t getCurrentPosition();
 };

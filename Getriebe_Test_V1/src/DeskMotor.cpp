@@ -108,7 +108,7 @@ void DeskMotor::setMaxSpeed(const float newMaxSpeed)
     deskMotor.setMaxSpeed(maxSpeed);
 }
 
-long DeskMotor::getCurrentPosition()
+uint32_t DeskMotor::getCurrentPosition()
 {
     return deskMotor.currentPosition();
 }
@@ -252,8 +252,4 @@ long DeskMotor::calculateDeltaSteps(float currentSpeed)
     const float deltaSteps = max(10.0f, ceil(totalSteps + bufferSteps));
 
     return deltaSteps;
-}
-
-uint32_t DeskMotor::getCurrentPosition(){
-    return deskMotor.currentPosition();
 }
