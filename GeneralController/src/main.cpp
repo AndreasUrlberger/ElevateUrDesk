@@ -7,6 +7,23 @@
 
 #define Uart Serial2
 
+static constexpr uint8_t GEARBOX_LEFT_ADDRESS = 0x33;
+static constexpr uint8_t GEARBOX_RIGHT_ADDRESS = 0x88;
+
+static constexpr uint8_t BUTTON_ID_MOVE_UP = 1;
+static constexpr uint8_t BUTTON_ID_MOVE_DOWN = 2;
+
+static constexpr int I2C_SDA_PIN = 21;
+static constexpr int I2C_SCL_PIN = 22;
+static constexpr uint32_t I2C_FREQ = 100000;
+
+// I2C Command Codes.
+static constexpr char CMD_MOVE_UP = 'u';
+static constexpr char CMD_MOVE_DOWN = 'd';
+static constexpr char CMD_MOVE_TO = 'm';
+static constexpr char CMD_EMERGENCY_STOP = 'e';
+static constexpr char CMD_GET_POSITION = 'p';
+
 std::string controlPanelMsgBuffer = "";
 uint8_t expectedMsgLength = 0;
 
@@ -17,14 +34,12 @@ std::chrono::steady_clock::time_point target;
 // Iteration duration
 std::chrono::steady_clock::duration iterationDuration = std::chrono::milliseconds(10);
 
-uint8_t upButtonId = 1;
-uint8_t downButtonId = 2;
-
 // Control panel state
 bool moveUp{false};
 bool moveDown{false};
 
-int gearboxAddress = 0x08;
+uint32_t gearboxLeftPosition{0u};
+uint32_t gearboxRightPosition{0u};
 
 void setup()
 {
@@ -36,11 +51,8 @@ void setup()
   start = std::chrono::steady_clock::now();
   target = start;
 
-  int sdaPin = 21;
-  int sclPin = 22;
-  int freq = 100000;
   Serial.println("Initializing I2C bus");
-  bool i2cSuccess = Wire.begin(sdaPin, sclPin, freq);
+  bool i2cSuccess = Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);
   Serial.print("I2C bus initialized: ");
   Serial.println(i2cSuccess ? "true" : "false");
 
@@ -83,22 +95,22 @@ void processButtonMessage(const char *message, size_t messageLength)
       Serial.println(" no event");
       break;
     case ButtonEvents::BUTTON_PRESSED:
-      if (buttonId == upButtonId)
+      if (buttonId == BUTTON_ID_MOVE_UP)
       {
         moveUp = true;
       }
-      else if (buttonId == downButtonId)
+      else if (buttonId == BUTTON_ID_MOVE_DOWN)
       {
         moveDown = true;
       }
       Serial.println(" pressed");
       break;
     case ButtonEvents::BUTTON_RELEASED:
-      if (buttonId == upButtonId)
+      if (buttonId == BUTTON_ID_MOVE_UP)
       {
         moveUp = false;
       }
-      else if (buttonId == downButtonId)
+      else if (buttonId == BUTTON_ID_MOVE_DOWN)
       {
         moveDown = false;
       }
@@ -177,7 +189,7 @@ bool readControlPanelMessage()
   return messageComplete;
 }
 
-void sendGearboxCommand(uint8_t *data, size_t dataLength, size_t responseLength, uint8_t *response)
+void sendGearboxCommand(uint8_t *data, size_t dataLength, size_t responseLength, uint8_t *response, uint8_t gearboxAddress)
 {
   Wire.beginTransmission(gearboxAddress);
   size_t bytesWritten{0u};
@@ -202,46 +214,75 @@ void sendGearboxCommand(uint8_t *data, size_t dataLength, size_t responseLength,
   }
 }
 
-static constexpr char CMD_MOVE_UP = 'u';
-static constexpr char CMD_MOVE_DOWN = 'd';
-static constexpr char CMD_MOVE_TO = 'm';
-static constexpr char CMD_EMERGENCY_STOP = 'e';
-
 void sendGearboxDriveUp()
 {
   uint8_t data[1] = {CMD_MOVE_UP};
   uint32_t currentGreaboxPosition{};
-  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition));
-  Serial.print("Current position: ");
-  Serial.println(currentGreaboxPosition);
+  // Left
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_LEFT_ADDRESS);
+  gearboxLeftPosition = currentGreaboxPosition;
+  Serial.print("Current position left: ");
+  Serial.println(gearboxLeftPosition);
+  // Right
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_RIGHT_ADDRESS);
+  gearboxRightPosition = currentGreaboxPosition;
+  Serial.print("Current position right: ");
+  Serial.println(gearboxRightPosition);
 }
 
 void sendGearboxDriveDown()
 {
   uint8_t data[1] = {CMD_MOVE_DOWN};
   uint32_t currentGreaboxPosition{};
-  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition));
-  Serial.print("Current position: ");
-  Serial.println(currentGreaboxPosition);
+  // Left
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_LEFT_ADDRESS);
+  gearboxLeftPosition = currentGreaboxPosition;
+  Serial.print("Current position left: ");
+  Serial.println(gearboxLeftPosition);
+  // Right
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_RIGHT_ADDRESS);
+  gearboxRightPosition = currentGreaboxPosition;
+  Serial.print("Current position right: ");
+  Serial.println(gearboxRightPosition);
 }
 
 void sendGearboxMoveTo(uint32_t position)
 {
   uint8_t data[5] = {CMD_MOVE_TO};
   memcpy(&(data[1]), &position, 4);
-  sendGearboxCommand(data, 5, 0, nullptr);
+  // Left
+  sendGearboxCommand(data, 5, 0, nullptr, GEARBOX_LEFT_ADDRESS);
+  // Right
+  sendGearboxCommand(data, 5, 0, nullptr, GEARBOX_RIGHT_ADDRESS);
 }
 
 void sendGearboxEmergencyStop()
 {
   uint8_t data[1] = {CMD_EMERGENCY_STOP};
-  sendGearboxCommand(data, 1, 0, nullptr);
+  // Left
+  sendGearboxCommand(data, 1, 0, nullptr, GEARBOX_LEFT_ADDRESS);
+  // Right
+  sendGearboxCommand(data, 1, 0, nullptr, GEARBOX_RIGHT_ADDRESS);
+}
+
+void sendGearboxGetPosition()
+{
+  uint8_t data[1] = {CMD_GET_POSITION};
+  uint32_t currentGreaboxPosition{};
+  // Left
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_LEFT_ADDRESS);
+  gearboxLeftPosition = currentGreaboxPosition;
+  Serial.print("Current position left: ");
+  Serial.println(gearboxLeftPosition);
+  // Right
+  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_RIGHT_ADDRESS);
+  gearboxRightPosition = currentGreaboxPosition;
+  Serial.print("Current position right: ");
+  Serial.println(gearboxRightPosition);
 }
 
 void loop()
 {
-  // Read the next message from the control panel.
-
   // Wait till the next iteration should start.
   std::this_thread::sleep_until(target);
 
@@ -257,6 +298,7 @@ void loop()
   if (moveUp && moveDown)
   {
     // Do nothing.
+    sendGearboxGetPosition();
   }
   else if (moveUp)
   {
@@ -271,6 +313,7 @@ void loop()
   else
   {
     // Do nothing.
+    sendGearboxGetPosition();
   }
 
   digitalWrite(23, LOW);

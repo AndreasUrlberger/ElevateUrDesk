@@ -56,4 +56,6 @@ public:
 
     void moveUp();
     void moveDown();
+
+    uint32_t getCurrentPosition();
 };

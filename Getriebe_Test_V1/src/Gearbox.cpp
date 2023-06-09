@@ -46,6 +46,10 @@ void Gearbox::initMotor()
     Serial.println("Called initMotor. This function does nothing.");
 }
 
+uint32_t Gearbox::getCurrentPosition(){
+    return deskMotor.getCurrentPosition();
+}
+
 #pragma region REMOVED
 // void Gearbox::setup()
 // {

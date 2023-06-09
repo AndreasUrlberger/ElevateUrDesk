@@ -35,4 +35,6 @@ public:
     ~Communication() = default;
 
     bool readControllerMessage();
+
+    uint32_t getCurrentMotorPosition();
 };

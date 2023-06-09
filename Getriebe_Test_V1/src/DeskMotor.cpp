@@ -253,3 +253,7 @@ long DeskMotor::calculateDeltaSteps(float currentSpeed)
 
     return deltaSteps;
 }
+
+uint32_t DeskMotor::getCurrentPosition(){
+    return deskMotor.currentPosition();
+}

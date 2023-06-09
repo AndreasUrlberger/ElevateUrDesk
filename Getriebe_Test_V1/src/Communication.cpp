@@ -107,3 +107,8 @@ bool Communication::readControllerMessage()
 
   return messageComplete;
 }
+
+uint32_t Communication::getCurrentMotorPosition()
+{
+  return gearbox.getCurrentPosition();
+}

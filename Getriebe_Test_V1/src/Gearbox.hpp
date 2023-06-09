@@ -49,6 +49,8 @@ public:
     void moveDown();
     void moveToPosition(long targetPosition);
 
+    uint32_t getCurrentPosition();
+
 #pragma region REMOVED
     // void setup();
     // void run(int currentPosition, int requestedPosition, int stepDeviation);
