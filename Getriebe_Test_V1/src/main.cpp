@@ -10,7 +10,7 @@
 #include "TextInput.hpp"
 #include <esp_task_wdt.h>
 #include <chrono>
-#include <thread>
+  #include <thread>
 
 #ifdef GEARBOX_LEFT
 static constexpr int8_t I2C_ADDRESS = 0x33;
@@ -69,6 +69,8 @@ bool readAllI2cData{false};
 size_t i2cDataLength{0u};
 uint8_t i2cData[16u]{0u};
 
+uint32_t otherGearboxPosition{0u};
+
 uint32_t getCurrentMotorPosition()
 {
   return communication->getCurrentMotorPosition();
@@ -86,6 +88,10 @@ void cmdMoveUp()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
+  
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+  
   communication->moveUp();
 }
 
@@ -101,6 +107,10 @@ void cmdMoveDown()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
+  
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+
   communication->moveDown();
 }
 
@@ -118,9 +128,11 @@ void cmdMoveTo()
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
 
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
   uint32_t targetPosition{0u};
   // Get target position from i2c data.
-  memcpy(&targetPosition, &(i2cData[1]), 4u);
+  memcpy(&targetPosition, &(i2cData[5]), 4u);
   communication->moveTo(targetPosition);
 }
 
@@ -142,6 +154,9 @@ void cmdGetPosition()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
+
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
 }
 
 void i2cOnReceive(int numBytes)
