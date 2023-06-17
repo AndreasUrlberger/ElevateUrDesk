@@ -10,8 +10,11 @@
 static constexpr uint8_t GEARBOX_LEFT_ADDRESS = 0x33;
 static constexpr uint8_t GEARBOX_RIGHT_ADDRESS = 0x88;
 
-static constexpr uint8_t BUTTON_ID_MOVE_UP = 1;
-static constexpr uint8_t BUTTON_ID_MOVE_DOWN = 2;
+static constexpr uint8_t BUTTON_ID_MAIN{0u}; // The one in the center of the wheel.
+static constexpr uint8_t BUTTON_ID_MOVE_UP{1u};
+static constexpr uint8_t BUTTON_ID_MOVE_DOWN{2u};
+static constexpr uint8_t BUTTON_ID_SHORTCUT_1{3u};
+static constexpr uint8_t BUTTON_ID_SHORTCUT_2{4u};
 
 static constexpr int I2C_SDA_PIN = 21;
 static constexpr int I2C_SCL_PIN = 22;
@@ -37,6 +40,7 @@ std::chrono::steady_clock::duration iterationDuration = std::chrono::millisecond
 // Control panel state
 bool moveUp{false};
 bool moveDown{false};
+bool moveTo{false};
 
 uint32_t gearboxLeftPosition{0u};
 uint32_t gearboxRightPosition{0u};
@@ -78,6 +82,10 @@ void processButtonMessage(const char *message, size_t messageLength)
     {
     case ButtonEvents::SINGLE_CLICK:
       Serial.println(" single click");
+      if (buttonId == BUTTON_ID_MAIN)
+      {
+        moveTo = true;
+      }
       break;
     case ButtonEvents::DOUBLE_CLICK:
       Serial.println(" double click");
@@ -250,10 +258,17 @@ void sendGearboxMoveTo(uint32_t position)
 {
   uint8_t data[5] = {CMD_MOVE_TO};
   memcpy(&(data[1]), &position, 4);
+  uint32_t currentGreaboxPosition{};
   // Left
-  sendGearboxCommand(data, 5, 0, nullptr, GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, 5, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_LEFT_ADDRESS);
+  gearboxLeftPosition = currentGreaboxPosition;
+  Serial.print("Current position left: ");
+  Serial.println(gearboxLeftPosition);
   // Right
-  sendGearboxCommand(data, 5, 0, nullptr, GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, 5, 4, reinterpret_cast<uint8_t *>(&currentGreaboxPosition), GEARBOX_RIGHT_ADDRESS);
+  gearboxRightPosition = currentGreaboxPosition;
+  Serial.print("Current position right: ");
+  Serial.println(gearboxRightPosition);
 }
 
 void sendGearboxEmergencyStop()
@@ -315,6 +330,17 @@ void loop()
     // Do nothing.
     sendGearboxGetPosition();
   }
+
+  if (moveTo)
+  {
+    const uint32_t moveToPosition = 40000;
+    sendGearboxMoveTo(moveToPosition);
+    moveTo = false;
+  }
+
+  // Calculate diff between position of gearboxes.
+  const int32_t diff = gearboxLeftPosition - gearboxRightPosition;
+  
 
   digitalWrite(23, LOW);
 

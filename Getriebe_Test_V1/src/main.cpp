@@ -107,6 +107,17 @@ void cmdMoveDown()
 void cmdMoveTo()
 {
   Serial.println("I2C moveTo");
+  // Send current position as response.
+  uint32_t currentPosition = getCurrentMotorPosition();
+  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+
+  size_t responseLength{4u};
+  size_t bytesWritten{0u};
+  while (bytesWritten < responseLength)
+  {
+    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+  }
+
   uint32_t targetPosition{0u};
   // Get target position from i2c data.
   memcpy(&targetPosition, &(i2cData[1]), 4u);
