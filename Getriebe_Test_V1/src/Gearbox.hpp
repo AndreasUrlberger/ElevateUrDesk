@@ -45,8 +45,8 @@ public:
     void startMotor();
     void stopMotor();
 
-    void moveUp();
-    void moveDown();
+    void moveUp(uint32_t penalty);
+    void moveDown(uint32_t penalty);
     void moveToPosition(long targetPosition);
 
     uint32_t getCurrentPosition();

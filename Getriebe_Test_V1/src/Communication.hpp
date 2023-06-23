@@ -25,8 +25,8 @@ private:
 public:
     void moveTo(const long targetPosition);
 
-    void moveUp();
-    void moveDown();
+    void moveUp(uint32_t penalty);
+    void moveDown(uint32_t penalty);
 
     void emergencyStop();
     void initDeskMotor();

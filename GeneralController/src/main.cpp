@@ -20,6 +20,8 @@ static constexpr int I2C_SDA_PIN = 21;
 static constexpr int I2C_SCL_PIN = 22;
 static constexpr uint32_t I2C_FREQ = 100000;
 
+static constexpr uint32_t MAX_GEARBOX_DEVIATION = 1000u;
+
 // I2C Command Codes.
 static constexpr char CMD_MOVE_UP = 'u';
 static constexpr char CMD_MOVE_DOWN = 'd';
@@ -309,6 +311,8 @@ void sendGearboxEmergencyStop()
   sendGearboxCommand(data, 1u, 0u, nullptr, GEARBOX_LEFT_ADDRESS);
   // Right
   sendGearboxCommand(data, 1u, 0u, nullptr, GEARBOX_RIGHT_ADDRESS);
+
+  Serial.println("Gearbox emergency stop");
 }
 
 void sendGearboxGetPosition()
@@ -350,6 +354,8 @@ void loop()
   {
   }
 
+  // TODO Priorities for commands, e.g. emergency stop has highest priority, overriding all other commands.
+
   // Send move command to gearboxes.
   if (moveUp && moveDown)
   {
@@ -381,6 +387,11 @@ void loop()
 
   // Calculate diff between position of gearboxes.
   const int32_t diff = gearboxLeftPosition - gearboxRightPosition;
+  if (abs(diff) > MAX_GEARBOX_DEVIATION)
+  {
+    // Emergency stop.
+    sendGearboxEmergencyStop();
+  }
 
   digitalWrite(23, LOW);
 

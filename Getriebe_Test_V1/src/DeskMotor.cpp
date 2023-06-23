@@ -152,7 +152,7 @@ void DeskMotor::setCurrentPosition(const long newPosition)
     deskMotor.setCurrentPosition(newPosition);
 }
 
-void DeskMotor::moveUp()
+void DeskMotor::moveUp(uint32_t penalty)
 {
     const bool isMovingDownwards = deskMotor.distanceToGo() < 0;
     if (isMovingDownwards)
@@ -166,8 +166,10 @@ void DeskMotor::moveUp()
 
     const float currentSpeed = deskMotor.speed();
     const long currentPosition = deskMotor.currentPosition();
+    const long deltaSteps = calculateDeltaSteps(currentSpeed);
+    const long adjustedDeltaSteps = max(deltaSteps - static_cast<long>(penalty), 0L);
     // Add delta steps calculated for the given speed.
-    const long targetPosition = currentPosition + calculateDeltaSteps(currentSpeed);
+    const long targetPosition = currentPosition + adjustedDeltaSteps;
 
     // Set target position.
     setNewTargetPosition(targetPosition);
@@ -176,7 +178,7 @@ void DeskMotor::moveUp()
     digitalWrite(18, LOW);
 }
 
-void DeskMotor::moveDown()
+void DeskMotor::moveDown(uint32_t penalty)
 {
     const bool isMovingUpwards = deskMotor.distanceToGo() > 0;
     if (isMovingUpwards)
@@ -191,8 +193,10 @@ void DeskMotor::moveDown()
     // Take the negative speed because then we can use the same calculation as for moving upwards.
     const float currentSpeed = -deskMotor.speed();
     const long currentPosition = deskMotor.currentPosition();
+    const long deltaSteps = calculateDeltaSteps(currentSpeed);
+    const long adjustedDeltaSteps = max(deltaSteps - static_cast<long>(penalty), 0L);
     // Subtract delta steps calculated for the given speed to account for the inverted speed.
-    long targetPosition = currentPosition - calculateDeltaSteps(currentSpeed);
+    const long targetPosition = currentPosition - adjustedDeltaSteps;
 
     // Set target position.
     setNewTargetPosition(targetPosition);

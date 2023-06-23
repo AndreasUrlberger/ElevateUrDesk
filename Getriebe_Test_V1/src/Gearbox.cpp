@@ -22,18 +22,18 @@ void Gearbox::stopMotor()
     deskMotor.stop();
 }
 
-void Gearbox::moveUp()
+void Gearbox::moveUp(uint32_t penalty)
 {
     // Calculate target position based on current position and speed.
     // Set target position.
-    deskMotor.moveUp();
+    deskMotor.moveUp(penalty);
 }
 
-void Gearbox::moveDown()
+void Gearbox::moveDown(uint32_t penalty)
 {
     // Calculate target position based on current position and speed.
     // Set target position.
-    deskMotor.moveDown();
+    deskMotor.moveDown(penalty);
 }
 
 void Gearbox::moveToPosition(long targetPosition)

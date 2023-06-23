@@ -10,7 +10,7 @@
 #include "TextInput.hpp"
 #include <esp_task_wdt.h>
 #include <chrono>
-  #include <thread>
+#include <thread>
 
 #ifdef GEARBOX_LEFT
 static constexpr int8_t I2C_ADDRESS = 0x33;
@@ -33,6 +33,9 @@ static constexpr char CMD_GET_POSITION = 'p';
 
 static constexpr float gearboxSensorHeight = 0.0f;
 static constexpr float gearboxMathematicalHeight = 0.0f;
+
+static constexpr uint32_t MAX_GEARBOX_DEVIATION = 1000u;
+static constexpr uint32_t MAX_SOFT_GEARBOX_DEVIATION = 400u;
 
 Communication *communication;
 
@@ -76,6 +79,22 @@ uint32_t getCurrentMotorPosition()
   return communication->getCurrentMotorPosition();
 }
 
+/**
+ * Checks if the two gearboxes deviate too fare from each other and performs an emergency stop if they do. Returns true if the gearboxes are close enough to each other.bool checkForGearboxDeviation(uint32_t currentPosition)
+ */
+bool checkForGearboxDeviation(uint32_t currentPosition)
+{
+  const bool tooHigh = currentPosition > (otherGearboxPosition + MAX_GEARBOX_DEVIATION);
+  const bool tooLow = otherGearboxPosition > (currentPosition + MAX_GEARBOX_DEVIATION);
+  if (tooHigh || tooLow)
+  {
+    communication->emergencyStop();
+    return false;
+  }
+
+  return true;
+}
+
 void cmdMoveUp()
 {
   // Send current position as response.
@@ -88,11 +107,31 @@ void cmdMoveUp()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
-  
+
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
-  
-  communication->moveUp();
+
+  // Compare this gearbox's current target position with the other gearbox's current target position.
+  // If the deviation is larger than the hard limit, stop the movement.
+  if (!checkForGearboxDeviation(currentPosition))
+  {
+    // Deviation is too large, emergency stop applied.
+    Serial.println("MoveUp: Emergency stop applied due to deviation.");
+    return;
+  }
+
+  // If the deviation is larger than the soft limit and this gearbox is ahead of the other, subtract the difference from the current target position.
+  if (currentPosition > (otherGearboxPosition + MAX_SOFT_GEARBOX_DEVIATION))
+  {
+    const uint32_t deviation = currentPosition - otherGearboxPosition;
+    // TODO Add argument to moveUp function specifying the distance to subtract from the current target position.
+    communication->moveUp(deviation);
+  }
+  else
+  {
+    // Gearboxes are close enough to each other, continue normally.
+    communication->moveUp(0u);
+  }
 }
 
 void cmdMoveDown()
@@ -107,11 +146,30 @@ void cmdMoveDown()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
   }
-  
+
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
 
-  communication->moveDown();
+  // Compare this gearbox's current target position with the other gearbox's current target position.
+  // If the deviation is larger than the hard limit, stop the movement.
+  if (!checkForGearboxDeviation(currentPosition))
+  {
+    // Deviation is too large, emergency stop applied.
+    Serial.println("MoveDown: Emergency stop applied due to deviation.");
+    return;
+  }
+  // If the deviation is larger than the soft limit and this gearbox is ahead of the other, subtract the difference from the current target position.
+  if (otherGearboxPosition > (currentPosition + MAX_SOFT_GEARBOX_DEVIATION))
+  {
+    const uint32_t deviation = otherGearboxPosition - currentPosition;
+    // TODO Add argument to moveDown function specifying the distance to subtract from the current target position.
+    communication->moveDown(deviation);
+  }
+  else
+  {
+    // Gearboxes are close enough to each other, continue normally.
+    communication->moveDown(0u);
+  }
 }
 
 void cmdMoveTo()
@@ -133,7 +191,18 @@ void cmdMoveTo()
   uint32_t targetPosition{0u};
   // Get target position from i2c data.
   memcpy(&targetPosition, &(i2cData[5]), 4u);
-  communication->moveTo(targetPosition);
+
+  // Check that current position is not too far away from current position of other gearbox.
+  // TODO If current position is ahead of other gearbox, try to throttle the movement a bit. (Probably not necessary, just stop if too far away.)
+  if ((currentPosition > (otherGearboxPosition + MAX_GEARBOX_DEVIATION)) || (otherGearboxPosition > (currentPosition + MAX_GEARBOX_DEVIATION)))
+  {
+    Serial.println("I2C moveTo: Too far away from other gearbox, stopping.");
+    communication->emergencyStop();
+  }
+  else
+  {
+    communication->moveTo(targetPosition);
+  }
 }
 
 void cmdEmergencyStop()

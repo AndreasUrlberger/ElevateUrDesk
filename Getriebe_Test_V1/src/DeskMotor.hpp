@@ -54,6 +54,6 @@ public:
 
     void addSkippedSteps(const int stepsToAdd);
 
-    void moveUp();
-    void moveDown();
+    void moveUp(uint32_t penalty);
+    void moveDown(uint32_t penalty);
 };
