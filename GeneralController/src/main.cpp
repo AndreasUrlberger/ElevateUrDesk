@@ -230,20 +230,20 @@ void sendGearboxDriveUp()
   uint8_t data[dataLength] = {0u};
   // Set first byte to command code
   data[0u] = CMD_MOVE_UP;
-  uint32_t currentGreaboxLeftPosition{};
-  uint32_t currentGreaboxRightPosition{};
+  uint32_t currentGearboxLeftPosition{};
+  uint32_t currentGearboxRightPosition{};
 
   // Left
   // Set last 4 bytes to position of right gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxRightPosition;
-  sendGearboxCommand(data, dataLength, 4, reinterpret_cast<uint8_t *>(&currentGreaboxLeftPosition), GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4, reinterpret_cast<uint8_t *>(&currentGearboxLeftPosition), GEARBOX_LEFT_ADDRESS);
   // Right
   // Set last 4 bytes to position of left gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxLeftPosition;
-  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGreaboxRightPosition), GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGearboxRightPosition), GEARBOX_RIGHT_ADDRESS);
 
-  gearboxLeftPosition = currentGreaboxLeftPosition;
-  gearboxRightPosition = currentGreaboxRightPosition;
+  gearboxLeftPosition = currentGearboxLeftPosition;
+  gearboxRightPosition = currentGearboxRightPosition;
   Serial.print("Gearbox position left: ");
   Serial.print(gearboxLeftPosition);
   Serial.print(" right: ");
@@ -256,20 +256,20 @@ void sendGearboxDriveDown()
   uint8_t data[dataLength] = {0u};
   // Set first byte to command code
   data[0u] = CMD_MOVE_DOWN;
-  uint32_t currentGreaboxLeftPosition{};
-  uint32_t currentGreaboxRightPosition{};
+  uint32_t currentGearboxLeftPosition{};
+  uint32_t currentGearboxRightPosition{};
 
   // Left
   // Set last 4 bytes to position of right gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxRightPosition;
-  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGreaboxLeftPosition), GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGearboxLeftPosition), GEARBOX_LEFT_ADDRESS);
   // Right
   // Set last 4 bytes to position of left gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxLeftPosition;
-  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGreaboxRightPosition), GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGearboxRightPosition), GEARBOX_RIGHT_ADDRESS);
 
-  gearboxLeftPosition = currentGreaboxLeftPosition;
-  gearboxRightPosition = currentGreaboxRightPosition;
+  gearboxLeftPosition = currentGearboxLeftPosition;
+  gearboxRightPosition = currentGearboxRightPosition;
   Serial.print("Gearbox position left: ");
   Serial.print(gearboxLeftPosition);
   Serial.print(" right: ");
@@ -282,22 +282,22 @@ void sendGearboxMoveTo(uint32_t position)
   uint8_t data[dataLength] = {0u};
   // Set first byte to command code
   data[0u] = CMD_MOVE_TO;
-  uint32_t currentGreaboxLeftPosition{};
-  uint32_t currentGreaboxRightPosition{};
+  uint32_t currentGearboxLeftPosition{};
+  uint32_t currentGearboxRightPosition{};
   // Set bytes 1-4 to target position
   *reinterpret_cast<uint32_t *>(&(data[1u])) = position;
 
   // Left
   // Set last 4 bytes to position of right gearbox
   *reinterpret_cast<uint32_t *>(&(data[5u])) = gearboxRightPosition;
-  sendGearboxCommand(data, dataLength, 4, reinterpret_cast<uint8_t *>(&currentGreaboxLeftPosition), GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGearboxLeftPosition), GEARBOX_LEFT_ADDRESS);
   // Right
   // Set last 4 bytes to position of left gearbox
   *reinterpret_cast<uint32_t *>(&(data[5u])) = gearboxLeftPosition;
-  sendGearboxCommand(data, dataLength, 4, reinterpret_cast<uint8_t *>(&currentGreaboxRightPosition), GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, dataLength, 4u, reinterpret_cast<uint8_t *>(&currentGearboxRightPosition), GEARBOX_RIGHT_ADDRESS);
 
-  gearboxLeftPosition = currentGreaboxLeftPosition;
-  gearboxRightPosition = currentGreaboxRightPosition;
+  gearboxLeftPosition = currentGearboxLeftPosition;
+  gearboxRightPosition = currentGearboxRightPosition;
   Serial.print("Gearbox position left: ");
   Serial.print(gearboxLeftPosition);
   Serial.print(" right: ");
@@ -307,10 +307,19 @@ void sendGearboxMoveTo(uint32_t position)
 void sendGearboxEmergencyStop()
 {
   uint8_t data[1u] = {CMD_EMERGENCY_STOP};
+  uint32_t currentGearboxLeftPosition{};
+  uint32_t currentGearboxRightPosition{};
   // Left
-  sendGearboxCommand(data, 1u, 0u, nullptr, GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentGearboxLeftPosition), GEARBOX_LEFT_ADDRESS);
   // Right
-  sendGearboxCommand(data, 1u, 0u, nullptr, GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentGearboxRightPosition), GEARBOX_RIGHT_ADDRESS);
+
+  gearboxLeftPosition = currentGearboxLeftPosition;
+  gearboxRightPosition = currentGearboxRightPosition;
+  Serial.print("Gearbox position left: ");
+  Serial.print(gearboxLeftPosition);
+  Serial.print(" right: ");
+  Serial.println(gearboxRightPosition);
 
   Serial.println("Gearbox emergency stop");
 }
@@ -321,20 +330,20 @@ void sendGearboxGetPosition()
   uint8_t data[dataLength] = {0u};
   // Set first byte to command code
   data[0u] = CMD_GET_POSITION;
-  uint32_t currentGreaboxLeftPosition{};
-  uint32_t currentGreaboxRightPosition{};
+  uint32_t currentGearboxLeftPosition{};
+  uint32_t currentGearboxRightPosition{};
 
   // Left
   // Set last 4 bytes to position of right gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxRightPosition;
-  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxLeftPosition), GEARBOX_LEFT_ADDRESS);
+  sendGearboxCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentGearboxLeftPosition), GEARBOX_LEFT_ADDRESS);
   // Right
   // Set last 4 bytes to position of left gearbox
   *reinterpret_cast<uint32_t *>(&(data[1u])) = gearboxLeftPosition;
-  sendGearboxCommand(data, 1, 4, reinterpret_cast<uint8_t *>(&currentGreaboxRightPosition), GEARBOX_RIGHT_ADDRESS);
+  sendGearboxCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentGearboxRightPosition), GEARBOX_RIGHT_ADDRESS);
 
-  gearboxLeftPosition = currentGreaboxLeftPosition;
-  gearboxRightPosition = currentGreaboxRightPosition;
+  gearboxLeftPosition = currentGearboxLeftPosition;
+  gearboxRightPosition = currentGearboxRightPosition;
   Serial.print("Gearbox position left: ");
   Serial.print(gearboxLeftPosition);
   Serial.print(" right: ");
@@ -386,7 +395,7 @@ void loop()
   }
 
   // Calculate diff between position of gearboxes.
-  const int32_t diff = gearboxLeftPosition - gearboxRightPosition;
+  const int32_t diff = static_cast<int32_t>(gearboxLeftPosition) - static_cast<int32_t>(gearboxRightPosition);
   if (abs(diff) > MAX_GEARBOX_DEVIATION)
   {
     // Emergency stop.

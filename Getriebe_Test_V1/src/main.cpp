@@ -22,7 +22,7 @@ static constexpr const char *const GEARBOX_NAME = "right";
 
 static constexpr int I2C_SDA_PIN = 21;
 static constexpr int I2C_SCL_PIN = 22;
-static constexpr uint32_t I2C_FREQ = 100000;
+static constexpr uint32_t I2C_FREQ = 100000u;
 
 // I2C Command Codes.
 static constexpr char CMD_MOVE_UP = 'u';
@@ -95,6 +95,13 @@ bool checkForGearboxDeviation(uint32_t currentPosition)
   return true;
 }
 
+uint32_t calculateCorrection(uint32_t deviation)
+{
+  const float correction = static_cast<float>(deviation - MAX_SOFT_GEARBOX_DEVIATION) / static_cast<float>(MAX_GEARBOX_DEVIATION - MAX_SOFT_GEARBOX_DEVIATION) * MAX_GEARBOX_DEVIATION;
+  const uint32_t iCorrection = static_cast<uint32_t>(round(correction));
+  return iCorrection;
+}
+
 void cmdMoveUp()
 {
   // Send current position as response.
@@ -109,7 +116,12 @@ void cmdMoveUp()
   }
 
   // Get position of other gearbox from i2c data.
-  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+
+  // TODO DEBUGGING ONLY
+  const int32_t deviation = static_cast<int32_t>(currentPosition) - static_cast<int32_t>(otherGearboxPosition);
+  Serial.print("MoveUp: Deviation is ");
+  Serial.println(deviation);
 
   // Compare this gearbox's current target position with the other gearbox's current target position.
   // If the deviation is larger than the hard limit, stop the movement.
@@ -124,8 +136,11 @@ void cmdMoveUp()
   if (currentPosition > (otherGearboxPosition + MAX_SOFT_GEARBOX_DEVIATION))
   {
     const uint32_t deviation = currentPosition - otherGearboxPosition;
-    // TODO Add argument to moveUp function specifying the distance to subtract from the current target position.
-    communication->moveUp(deviation);
+    const uint32_t correction = calculateCorrection(deviation);
+    Serial.print("MoveUp Soft Limit: Correction is ");
+    Serial.println(correction);
+    // Add argument to moveUp function specifying the distance to subtract from the current target position.
+    communication->moveUp(correction);
   }
   else
   {
@@ -148,7 +163,12 @@ void cmdMoveDown()
   }
 
   // Get position of other gearbox from i2c data.
-  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+
+  // TODO DEBUGGING ONLY
+  const int32_t deviation = static_cast<int32_t>(currentPosition) - static_cast<int32_t>(otherGearboxPosition);
+  Serial.print("MoveDown: Deviation is ");
+  Serial.println(deviation);
 
   // Compare this gearbox's current target position with the other gearbox's current target position.
   // If the deviation is larger than the hard limit, stop the movement.
@@ -162,8 +182,11 @@ void cmdMoveDown()
   if (otherGearboxPosition > (currentPosition + MAX_SOFT_GEARBOX_DEVIATION))
   {
     const uint32_t deviation = otherGearboxPosition - currentPosition;
-    // TODO Add argument to moveDown function specifying the distance to subtract from the current target position.
-    communication->moveDown(deviation);
+    const uint32_t correction = calculateCorrection(deviation);
+    // Add argument to moveDown function specifying the distance to subtract from the current target position.
+    Serial.print("MoveDown Soft Limit: Correction is ");
+    Serial.println(correction);
+    communication->moveDown(correction);
   }
   else
   {
@@ -187,10 +210,15 @@ void cmdMoveTo()
   }
 
   // Get position of other gearbox from i2c data.
-  memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
   uint32_t targetPosition{0u};
   // Get target position from i2c data.
-  memcpy(&targetPosition, &(i2cData[5]), 4u);
+  memcpy(&targetPosition, &(i2cData[5u]), 4u);
+
+  // TODO DEBUGGING ONLY
+  const int32_t deviation = static_cast<int32_t>(currentPosition) - static_cast<int32_t>(otherGearboxPosition);
+  Serial.print("MoveTo: Deviation is ");
+  Serial.println(deviation);
 
   // Check that current position is not too far away from current position of other gearbox.
   // TODO If current position is ahead of other gearbox, try to throttle the movement a bit. (Probably not necessary, just stop if too far away.)
@@ -207,6 +235,17 @@ void cmdMoveTo()
 
 void cmdEmergencyStop()
 {
+  // Send current position as response.
+  uint32_t currentPosition = getCurrentMotorPosition();
+  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+
+  size_t responseLength{4u};
+  size_t bytesWritten{0u};
+  while (bytesWritten < responseLength)
+  {
+    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+  }
+
   Serial.println("I2C emergencyStop");
   communication->emergencyStop();
 }
@@ -239,7 +278,6 @@ void i2cOnReceive(int numBytes)
   }
 
   readAllI2cData = true;
-  Serial.println();
 }
 
 void i2cOnRequest()
