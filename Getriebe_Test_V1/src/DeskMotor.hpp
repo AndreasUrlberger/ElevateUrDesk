@@ -33,7 +33,7 @@ private:
 
 public:
     DeskMotor(const float maxSpeed, const float maxAcceleration);
-    ~DeskMotor();
+    ~DeskMotor() = default;
 
     static DeskMotor *instance;
     std::atomic_int dueTaskIterations{0};
@@ -41,6 +41,9 @@ public:
     void setMaxSpeed(const float newSpeed);
     void setMaxAcceleration(const float newAcceleration);
     uint32_t getCurrentPosition();
+    int32_t getCurrentSpeed();
+    bool isMotorMovingUpwards();
+    bool isMotorMovingDownwards();
     void setNewTargetPosition(const long newTargetPosition);
     void addToTargetPosition(const long stepsToAdd);
     void setCurrentPosition(const long newPosition);
