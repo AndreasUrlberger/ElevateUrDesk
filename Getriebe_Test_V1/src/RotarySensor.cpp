@@ -9,7 +9,7 @@ bool setupFinished = false;
 
 bool RotarySensor::setup() // sets up the rotary sensor
 {
-    Wire.begin(RotarySDA, RotarySCL); // look up which pins the as5600 library uses !!!
+    Wire.begin(ROTARY_SDA, ROTARY_SCL); // look up which pins the as5600 library uses !!!
     // maybe self test?
     setupFinished = true;
 

@@ -41,11 +41,6 @@ void Gearbox::moveToPosition(long targetPosition)
     deskMotor.setNewTargetPosition(targetPosition);
 }
 
-void Gearbox::initMotor()
-{
-    Serial.println("Called initMotor. This function does nothing.");
-}
-
 uint32_t Gearbox::getCurrentPosition(){
     return deskMotor.getCurrentPosition();
 }

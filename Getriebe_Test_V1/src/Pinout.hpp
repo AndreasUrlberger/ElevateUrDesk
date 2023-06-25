@@ -23,30 +23,30 @@
 #define MotorDiag1 -1 // Alert if motor is stalled ?
 
 // Primary Brake
-#define PrimaryBrake1 32 // 4 // Primary brake motor, input 1
-#define PrimaryBrake2 33 // 0
-#define PrimaryBrake3 25 // 5
-#define PrimaryBrake4 26 // 15
+#define LARGE_BRAKE_1 32 // 4 // Primary brake motor, input 1
+#define LARGE_BRAKE_2 33 // 0
+#define LARGE_BRAKE_3 25 // 5
+#define LARGE_BRAKE_4 26 // 15
 
 // Secondary Brake
-#define SecondaryBrake1 255 // Secondary brake motor, input 1
-#define SecondaryBrake2 255
-#define SecondaryBrake3 255
-#define SecondaryBrake4 255
+#define SMALL_BRAKE_1 255 // Secondary brake motor, input 1
+#define SMALL_BRAKE_2 255
+#define SMALL_BRAKE_3 255
+#define SMALL_BRAKE_4 255
 
 // Lightgates
-#define PrimarySensorOpen -1   // Lightgatee for sensing if primary brake is opened
-#define PrimarySensorClosed -1 // Lightgatee for sensing if primary brake is closed
-#define SecondarySensorOpen -1
-#define SecondarySensorClosed -1
+#define LIGHTGATE_LARGE_BRAKE_OPEN 36
+#define LIGHTGATE_LARGE_BRAKE_CLOSED 39
+#define LIGHTGATE_SMALL_BRAKE_OPEN 255
+#define LIGHTGATE_SMALL_BRAKE_CLOSED 255
 
 // Relay
-#define Relay3V -1  // for turning the motor control board on and off
-#define Relay24V -1 // only if neccessary and pin is available
+#define RELAT_3V -1  // for turning the motor control board on and off
+#define RELAT_24V -1 // only if neccessary and pin is available
 
 // Rotary Sensor
-#define RotarySDA -1
-#define RotarySCL -1
+#define ROTARY_SDA -1
+#define ROTARY_SCL -1
 
 // only for debug purposes
 #define DebugButton1 35

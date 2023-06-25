@@ -11,7 +11,7 @@ class DeskMotor
     friend class MainLogUtil;
 
 private:
-    AccelStepper deskMotor{AccelStepper::HALF4WIRE, PrimaryBrake1, PrimaryBrake3, PrimaryBrake2, PrimaryBrake4};
+    AccelStepper deskMotor{AccelStepper::HALF4WIRE, LARGE_BRAKE_1, LARGE_BRAKE_3, LARGE_BRAKE_2, LARGE_BRAKE_4};
     float maxSpeed{1500.f}; // max speed of main motor
     float maxAcceleration{100.f};
     /*volatile*/ long targetPosition{0}; // current target position of the motor

@@ -16,7 +16,7 @@ bool Lightgate::CheckPrimaryClosed()
     // relevante Pins auslesen
     bool status = false;
 
-    if (PrimarySensorOpen == HIGH && PrimarySensorClosed == LOW)
+    if (LIGHTGATE_LARGE_BRAKE_OPEN == HIGH && LIGHTGATE_LARGE_BRAKE_CLOSED == LOW)
     {
         status = true;
     }
@@ -31,13 +31,13 @@ int8_t Lightgate::CheckPrimaryStatus()
 {
     // relevante Pins auslesen
     int8_t status = -1;
-    if (PrimarySensorOpen == HIGH && PrimarySensorClosed == LOW)
+    if (LIGHTGATE_LARGE_BRAKE_OPEN == HIGH && LIGHTGATE_LARGE_BRAKE_CLOSED == LOW)
     {
         status = 0; // Brake is closed
     }
     else
     {
-        if (PrimarySensorOpen == LOW && PrimarySensorClosed == HIGH)
+        if (LIGHTGATE_LARGE_BRAKE_OPEN == LOW && LIGHTGATE_LARGE_BRAKE_CLOSED == HIGH)
         {
             status = 1; // Brake is open
         }

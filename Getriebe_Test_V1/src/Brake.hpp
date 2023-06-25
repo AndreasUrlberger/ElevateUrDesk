@@ -9,8 +9,8 @@ class Brake
 {
 private:
     /* data */
-    AccelStepper primaryStepper{AccelStepper::HALF4WIRE, PrimaryBrake1, PrimaryBrake3, PrimaryBrake2, PrimaryBrake4};
-    AccelStepper secondaryStepper{AccelStepper::HALF4WIRE, SecondaryBrake1, SecondaryBrake3, SecondaryBrake2, SecondaryBrake4};
+    AccelStepper primaryStepper{AccelStepper::HALF4WIRE, LARGE_BRAKE_1, LARGE_BRAKE_3, LARGE_BRAKE_2, LARGE_BRAKE_4};
+    AccelStepper secondaryStepper{AccelStepper::HALF4WIRE, SMALL_BRAKE_1, SMALL_BRAKE_3, SMALL_BRAKE_2, SMALL_BRAKE_4};
     Lightgate lightgate{};
 
 public:
