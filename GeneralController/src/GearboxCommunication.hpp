@@ -21,7 +21,7 @@ private:
     void sendCommand(uint8_t *data, const size_t dataLength, const size_t responseLength, uint8_t *response, const uint8_t address);
 
 public:
-    GearboxCommunication(const uint8_t gearboxLeftAddress, const uint8_t gearboxRightAddress, TwoWire *i2c, const int i2cSdaPin, const int i2cSclPin, const uint32_t i2cFrequency) : addressLeft(gearboxLeftAddress), addressRight(gearboxRightAddress), i2c(i2c){};
+    GearboxCommunication(const uint8_t gearboxLeftAddress, const uint8_t gearboxRightAddress, TwoWire *i2c, const int i2cSdaPin, const int i2cSclPin, const uint32_t i2cFrequency);
     ~GearboxCommunication() = default;
 
     void driveUp();
