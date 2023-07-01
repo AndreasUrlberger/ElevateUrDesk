@@ -49,12 +49,6 @@ void setup()
   start = std::chrono::steady_clock::now();
   target = start;
 
-  // Initialize Gearbox
-  Serial.println("Initializing I2C bus");
-  bool i2cSuccess = Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);
-  Serial.print("I2C bus initialized: ");
-  Serial.println(i2cSuccess ? "true" : "false");
-
   // DEBUGGING
   // init output pin
   pinMode(23, OUTPUT);
