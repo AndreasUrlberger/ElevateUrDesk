@@ -159,7 +159,7 @@ void Communication::genCtrlMoveDown()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
 
-  size_t responseLength{4u};
+  size_t responseLength{4u};   
   size_t bytesWritten{0u};
   while (bytesWritten < responseLength)
   {
