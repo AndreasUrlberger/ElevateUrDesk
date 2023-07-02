@@ -9,7 +9,6 @@
 
 static constexpr uint8_t GEARBOX_LEFT_ADDRESS = 0x33;
 static constexpr uint8_t GEARBOX_RIGHT_ADDRESS = 0x88;
-static constexpr uint32_t MAX_GEARBOX_DEVIATION = 1000u;
 
 // Gearboxes I2C Connection.
 static constexpr int I2C_SDA_PIN = 21;
@@ -28,11 +27,6 @@ std::chrono::steady_clock::time_point start;
 std::chrono::steady_clock::time_point target;
 // Iteration duration
 std::chrono::steady_clock::duration iterationDuration = std::chrono::milliseconds(10);
-
-// Control panel state
-bool moveUp{false};
-bool moveDown{false};
-bool moveTo{false};
 
 GearboxCommunication gearbox(GEARBOX_LEFT_ADDRESS, GEARBOX_RIGHT_ADDRESS, &Wire, I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);
 std::queue<InputEvent *> eventQueue;
@@ -58,53 +52,12 @@ void loop()
   // Wait till the next iteration should start.
   std::this_thread::sleep_until(target);
 
-  // Execute code here.
-
   // Read all messages from the control panel.
   while (controlPanelCommunication.update())
   {
   }
 
-  // TODO Priorities for commands, e.g. emergency stop has highest priority, overriding all other commands.
-
-  // Send move command to gearboxes.
-  if (moveUp && moveDown)
-  {
-    // Do nothing.
-    gearbox.getPosition();
-  }
-  else if (moveUp)
-  {
-    // Tell gearboxes to move up.
-    gearbox.driveUp();
-  }
-  else if (moveDown)
-  {
-    // Tell gearboxes to move down.
-    gearbox.driveDown();
-  }
-  else
-  {
-    // Do nothing.
-    gearbox.getPosition();
-  }
-
-  if (moveTo)
-  {
-    const uint32_t moveToPosition = 40000;
-    gearbox.driveTo(moveToPosition);
-    moveTo = false;
-  }
-
-  // Calculate diff between position of gearboxes.
-  const uint32_t gearboxLeftPosition = gearbox.getPositionLeft();
-  const uint32_t gearboxRightPosition = gearbox.getPositionRight();
-  const int32_t diff = static_cast<int32_t>(gearboxLeftPosition) - static_cast<int32_t>(gearboxRightPosition);
-  if (abs(diff) > MAX_GEARBOX_DEVIATION)
-  {
-    // Emergency stop.
-    gearbox.emergencyStop();
-  }
+  inputController.update();
 
   // Update the target time for the next iteration.
   target += iterationDuration;
