@@ -108,15 +108,17 @@ void Communication::genCtrlOnRequestI2C()
 
 void Communication::genCtrlMoveUp()
 {
-  // Send current position as response.
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
   uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
 
-  size_t responseLength{4u};
   size_t bytesWritten{0u};
-  while (bytesWritten < responseLength)
+  while (bytesWritten < RESPONSE_LENGTH)
   {
-    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
 
   // Get position of other gearbox from i2c data.
@@ -155,15 +157,17 @@ void Communication::genCtrlMoveUp()
 
 void Communication::genCtrlMoveDown()
 {
-  // Send current position as response.
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
   uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
 
-  size_t responseLength{4u};   
   size_t bytesWritten{0u};
-  while (bytesWritten < responseLength)
+  while (bytesWritten < RESPONSE_LENGTH)
   {
-    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
 
   // Get position of other gearbox from i2c data.
@@ -197,15 +201,18 @@ void Communication::genCtrlMoveDown()
 void Communication::genCtrlMoveTo()
 {
   Serial.println("I2C moveTo");
-  // Send current position as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
 
-  size_t responseLength{4u};
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
+  uint32_t currentPosition = gearbox.getCurrentPosition();
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
+
   size_t bytesWritten{0u};
-  while (bytesWritten < responseLength)
+  while (bytesWritten < RESPONSE_LENGTH)
   {
-    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
 
   // Get position of other gearbox from i2c data.
@@ -234,15 +241,17 @@ void Communication::genCtrlMoveTo()
 
 void Communication::genCtrlEmergencyStop()
 {
-  // Send current position as response.
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
   uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
 
-  size_t responseLength{4u};
   size_t bytesWritten{0u};
-  while (bytesWritten < responseLength)
+  while (bytesWritten < RESPONSE_LENGTH)
   {
-    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
 
   Serial.println("I2C emergencyStop");
@@ -251,15 +260,17 @@ void Communication::genCtrlEmergencyStop()
 
 void Communication::genCtrlGetPosition()
 {
-  // Send current position as response.
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
   uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t *data = reinterpret_cast<uint8_t *>(&currentPosition);
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
 
-  size_t responseLength{4u};
   size_t bytesWritten{0u};
-  while (bytesWritten < responseLength)
+  while (bytesWritten < RESPONSE_LENGTH)
   {
-    bytesWritten += Wire.write(&(data[bytesWritten]), responseLength - bytesWritten);
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
 
   // Get position of other gearbox from i2c data.

@@ -21,11 +21,8 @@ static constexpr int8_t UART_RX_PIN = 16;
 static constexpr uint32_t UART_CONFIG = SERIAL_8N1;
 static constexpr uint32_t UART_BAUDRATE = 115200u;
 
-// Chrono time
 std::chrono::steady_clock::time_point start;
-// Target time
 std::chrono::steady_clock::time_point target;
-// Iteration duration
 std::chrono::steady_clock::duration iterationDuration = std::chrono::milliseconds(10);
 
 GearboxCommunication gearbox(GEARBOX_LEFT_ADDRESS, GEARBOX_RIGHT_ADDRESS, &Wire, I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);

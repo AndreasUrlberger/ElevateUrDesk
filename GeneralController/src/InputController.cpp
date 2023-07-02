@@ -4,6 +4,11 @@ void InputController::update()
 {
     updateUiStateMachine();
     updateGearboxStateMachine();
+
+    Serial.print("Gearbox position left: ");
+    Serial.print(gearbox->getPositionLeft());
+    Serial.print(" right: ");
+    Serial.println(gearbox->getPositionRight());
 }
 
 void InputController::updateUiStateMachine()

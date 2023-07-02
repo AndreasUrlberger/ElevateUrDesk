@@ -9,8 +9,12 @@ GearboxCommunication::GearboxCommunication(const uint8_t gearboxLeftAddress, con
     Serial.println(i2cSuccess ? "true" : "false");
 }
 
-void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, const size_t responseLength, uint8_t *response, const uint8_t address)
+void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, const bool isLeftGearbox)
 {
+    constexpr size_t RESPONSE_LENGTH{5u};
+    const uint8_t address = isLeftGearbox ? addressLeft : addressRight;
+    uint8_t response[RESPONSE_LENGTH] = {0u};
+
     i2c->beginTransmission(address);
     size_t bytesWritten{0u};
     while (bytesWritten < dataLength)
@@ -20,11 +24,11 @@ void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, c
     i2c->endTransmission();
 
     // Request a response from the gearbox.
-    i2c->requestFrom(address, responseLength);
+    i2c->requestFrom(address, RESPONSE_LENGTH);
 
     // Read the response.
     size_t bytesRead{0u};
-    while (bytesRead < responseLength)
+    while (bytesRead < RESPONSE_LENGTH)
     {
         if (i2c->available())
         {
@@ -32,130 +36,131 @@ void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, c
             bytesRead++;
         }
     }
+
+    processResponse(response, isLeftGearbox);
+}
+
+void GearboxCommunication::processResponse(const uint8_t *const response, const bool isLeftGearbox)
+{
+    // Process the response.
+    if (isLeftGearbox)
+    {
+        positionLeft = *reinterpret_cast<const uint32_t *>(response);
+        brakeStateLeft = response[4u];
+    }
+    else
+    {
+        positionRight = *reinterpret_cast<const uint32_t *>(response);
+        brakeStateRight = response[4u];
+    }
 }
 
 void GearboxCommunication::driveUp()
 {
     constexpr size_t DATA_LENGTH{5u};
+    // Save last position such that both gearboxes get the position from roughly the same time.
+    const uint32_t lastPositionRight{positionRight};
+    const uint32_t lastPositionLeft{positionLeft};
+
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
     data[0u] = CMD_MOVE_UP;
-    uint32_t currentPositionLeft{};
-    uint32_t currentPositionRight{};
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionRight;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionLeft), addressLeft);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
+    sendCommand(data, DATA_LENGTH, true);
+
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionLeft;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionRight), addressRight);
-
-    positionLeft = currentPositionLeft;
-    positionRight = currentPositionRight;
-    Serial.print("Gearbox position left: ");
-    Serial.print(positionLeft);
-    Serial.print(" right: ");
-    Serial.println(positionRight);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }
 
 void GearboxCommunication::driveDown()
 {
     constexpr size_t DATA_LENGTH{5u};
+    // Save last position such that both gearboxes get the position from roughly the same time.
+    const uint32_t lastPositionRight{positionRight};
+    const uint32_t lastPositionLeft{positionLeft};
+
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
     data[0u] = CMD_MOVE_DOWN;
-    uint32_t currentPositionLeft{};
-    uint32_t currentPositionRight{};
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionRight;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionLeft), addressLeft);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
+    sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionLeft;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionRight), addressRight);
-
-    positionLeft = currentPositionLeft;
-    positionRight = currentPositionRight;
-    Serial.print("Gearbox position left: ");
-    Serial.print(positionLeft);
-    Serial.print(" right: ");
-    Serial.println(positionRight);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }
 
 void GearboxCommunication::driveTo(const uint32_t position)
 {
     constexpr size_t DATA_LENGTH{9u};
+    // Save last position such that both gearboxes get the position from roughly the same time.
+    const uint32_t lastPositionRight{positionRight};
+    const uint32_t lastPositionLeft{positionLeft};
+
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
     data[0u] = CMD_MOVE_TO;
-    uint32_t currentPositionLeft{};
-    uint32_t currentPositionRight{};
     // Set bytes 1-4 to target position
     *reinterpret_cast<uint32_t *>(&(data[1u])) = position;
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[5u])) = positionRight;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionLeft), addressLeft);
+    *reinterpret_cast<uint32_t *>(&(data[5u])) = lastPositionRight;
+    sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[5u])) = positionLeft;
-    sendCommand(data, DATA_LENGTH, 4u, reinterpret_cast<uint8_t *>(&currentPositionRight), addressRight);
-
-    positionLeft = currentPositionLeft;
-    positionRight = currentPositionRight;
-    Serial.print("Gearbox position left: ");
-    Serial.print(positionLeft);
-    Serial.print(" right: ");
-    Serial.println(positionRight);
+    *reinterpret_cast<uint32_t *>(&(data[5u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }
 
 void GearboxCommunication::emergencyStop()
 {
-    constexpr size_t DATA_LENGTH{1u};
-    uint8_t data[DATA_LENGTH] = {CMD_EMERGENCY_STOP};
-    uint32_t currentPositionLeft{};
-    uint32_t currentPositionRight{};
+    // TODO Make sure it has the same response length in the Gearbox code.
+    constexpr size_t DATA_LENGTH{5u};
+    // Save last position such that both gearboxes get the position from roughly the same time.
+    const uint32_t lastPositionRight{positionRight};
+    const uint32_t lastPositionLeft{positionLeft};
+
+    uint8_t data[DATA_LENGTH] = {0U};
+    // Set first byte to command code
+    data[0u] = CMD_EMERGENCY_STOP;
 
     // Left
-    sendCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentPositionLeft), addressLeft);
-    // Right
-    sendCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentPositionRight), addressRight);
+    // Set last 4 bytes to position of right gearbox
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
+    sendCommand(data, DATA_LENGTH, true);
 
-    positionLeft = currentPositionLeft;
-    positionRight = currentPositionRight;
-    Serial.print("Gearbox position left: ");
-    Serial.print(positionLeft);
-    Serial.print(" right: ");
-    Serial.println(positionRight);
+    // Right
+    // Set last 4 bytes to position of left gearbox
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }
 
 void GearboxCommunication::getPosition()
 {
-    static const size_t DATA_LENGTH{5u};
+    constexpr size_t DATA_LENGTH{5u};
+    // Save last position such that both gearboxes get the position from roughly the same time.
+    const uint32_t lastPositionRight{positionRight};
+    const uint32_t lastPositionLeft{positionLeft};
+
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
     data[0u] = CMD_GET_POSITION;
-    uint32_t currentPositionLeft{};
-    uint32_t currentPositionRight{};
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionRight;
-    sendCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentPositionLeft), addressLeft);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
+    sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[1u])) = positionLeft;
-    sendCommand(data, 1u, 4u, reinterpret_cast<uint8_t *>(&currentPositionRight), addressRight);
-
-    positionLeft = currentPositionLeft;
-    positionRight = currentPositionRight;
-    Serial.print("Gearbox position left: ");
-    Serial.print(positionLeft);
-    Serial.print(" right: ");
-    Serial.println(positionRight);
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }

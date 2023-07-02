@@ -49,16 +49,9 @@ public:
     void moveToPosition(long targetPosition);
 
     uint32_t getCurrentPosition();
-
-#pragma region REMOVED
-    // void setup();
-    // void run(int currentPosition, int requestedPosition, int stepDeviation);
-    // void powerLoss();
-    // void status();
-    // void standby();
-    // void stop();
-    // int computeNewSpeed(int stepDeviation, int currentSpeed);
-    // int computeTargetPosition(int stepDeviation, int currentSpeed);
-    // void updateMotorSpeed(int speed);
-#pragma endregion REMOVED
+    uint8_t getCurrentBrakeState() const
+    {
+        // TODO Implement
+        return 0u;
+    }
 };
