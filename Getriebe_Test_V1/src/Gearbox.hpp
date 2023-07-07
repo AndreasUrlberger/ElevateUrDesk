@@ -41,23 +41,9 @@ public:
     void moveToPosition(long targetPosition);
 
     uint32_t getCurrentPosition();
-    BrakeState getCurrentBrakeState() const
-    {
-        if (smallBrake.getBrakeState() == BrakeState::OPEN && largeBrake.getBrakeState() == BrakeState::OPEN)
-        {
-            return BrakeState::OPEN;
-        }
-        else if (smallBrake.getBrakeState() == BrakeState::CLOSED && largeBrake.getBrakeState() == BrakeState::CLOSED)
-        {
-            return BrakeState::CLOSED;
-        }
-        else if (smallBrake.getBrakeState() == BrakeState::ERROR || largeBrake.getBrakeState() == BrakeState::ERROR)
-        {
-            return BrakeState::ERROR;
-        }
-        else
-        {
-            return BrakeState::INTERMEDIATE;
-        }
-    }
+    BrakeState getCurrentBrakeState() const;
+
+    DeskMotor *const getDeskMotor();
+    Brake *const getSmallBrake();
+    Brake *const getLargeBrake();
 };

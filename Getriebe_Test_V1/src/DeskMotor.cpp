@@ -4,22 +4,11 @@
 #include <thread>
 #include <esp_task_wdt.h>
 
-DeskMotor *DeskMotor::instance;
-hw_timer_t *DeskMotor::timerHandle;
-
-void IRAM_ATTR onDeskMotorTimer()
-{
-    DeskMotor::instance->dueTaskIterations.fetch_add(1);
-}
-
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
-    instance = this;
     deskMotor.setCurrentPosition(0);
     deskMotor.setMaxSpeed(maxSpeed);
     deskMotor.setAcceleration(maxAcceleration);
-
-    startTimer();
 
     Serial.printf("Main motor initialized\n");
 }
@@ -47,52 +36,6 @@ void DeskMotor::step()
         deskMotor.moveTo(-targetPosition);
 #endif
     }
-}
-
-void DeskMotor::runTask()
-{
-    Serial.println("RunTask started");
-
-    esp_task_wdt_init(UINT32_MAX, false);
-    esp_task_wdt_delete(NULL);
-
-    Serial.println("WDT diabled on core 1");
-
-    while (true)
-    {
-        if (dueTaskIterations.load() > 0)
-        {
-            dueTaskIterations.fetch_sub(1);
-            step();
-        }
-    }
-}
-
-void DeskMotor::startTimer()
-{
-    // Create new task to handle the timer interrupt and start the desk motor task.
-    Serial.println("Start timer/motor task.");
-    xTaskCreatePinnedToCore(
-        [](void *param)
-        {
-            // Runs on core 0.
-            Serial.println("DeskMotorTimerTask is running on core " + String(xPortGetCoreID()) + ".");
-
-            // The prescaler is used to divide the base clock frequency of the ESP32’s timer. The ESP32’s timer uses the APB clock (APB_CLK) as its base clock, which is normally 80 MHz. By setting the prescaler to 80, we are dividing the base clock frequency by 80, resulting in a timer tick frequency of 1 MHz (80 MHz / 80 = 1 MHz).
-            DeskMotor::timerHandle = timerBegin(0, 80, true);
-            timerAttachInterrupt(DeskMotor::timerHandle, &onDeskMotorTimer, true);
-            timerAlarmWrite(DeskMotor::timerHandle, iterationIntervalUS, true);
-            timerAlarmEnable(DeskMotor::timerHandle);
-            Serial.println("Just started timer.");
-
-            DeskMotor::instance->runTask();
-        },
-        "DeskMotorTimerTask", // Task name
-        10000,                // Stack size (bytes)
-        NULL,                 // Parameter
-        configMAX_PRIORITIES, // Task priority
-        NULL,                 // Task handle
-        0);                   // Core where the task should run
 }
 
 void DeskMotor::setMaxAcceleration(const float newMaxAcceleration)

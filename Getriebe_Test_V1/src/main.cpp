@@ -12,11 +12,13 @@
 #include <chrono>
 #include <thread>
 #include "Pinout.hpp"
+#include "MotorTimer.hpp"
 
 static constexpr float gearboxSensorHeight = 0.0f;
 static constexpr float gearboxMathematicalHeight = 0.0f;
 
-Communication *communication;
+Communication communication{gearboxSensorHeight, gearboxMathematicalHeight};
+MotorTimer motorTimer{communication.getGearbox()->getDeskMotor(), communication.getGearbox()->getSmallBrake(), communication.getGearbox()->getLargeBrake()};
 
 #pragma region DEBUG
 
@@ -29,7 +31,7 @@ private:
 public:
   static void logStuff()
   {
-    Gearbox *gearbox = &(communication->gearbox);
+    Gearbox *gearbox = communication.getGearbox();
     DeskMotor *deskMotor = &(gearbox->deskMotor);
     // Print if deskMotor is running
     Serial.print("DeskMotor is running: ");
@@ -55,9 +57,6 @@ void setup()
 
   Serial.println("WDT diabled on core 0");
 
-  // Cannot initialize earlier as the Serial.begin() call is required.
-  communication = new Communication(gearboxSensorHeight, gearboxMathematicalHeight);
-
   // TODO Debug only
   pinMode(18, OUTPUT);
   pinMode(19, OUTPUT);
@@ -74,13 +73,13 @@ void setup()
 void loop()
 {
   // Read lightgate sensors.
-  bool largeBrakeIsOpen = digitalRead(LIGHTGATE_LARGE_BRAKE_OPEN);
-  bool largeBrakeIsClosed = digitalRead(LIGHTGATE_LARGE_BRAKE_CLOSED);
+  // bool largeBrakeIsOpen = digitalRead(LIGHTGATE_LARGE_BRAKE_OPEN);
+  // bool largeBrakeIsClosed = digitalRead(LIGHTGATE_LARGE_BRAKE_CLOSED);
 
-  Serial.print("Large brake open: ");
-  Serial.print(largeBrakeIsOpen ? "true" : "false");
-  Serial.print(" | Large brake closed: ");
-  Serial.println(largeBrakeIsClosed ? "true" : "false");
+  // Serial.print("Large brake open: ");
+  // Serial.print(largeBrakeIsOpen ? "true" : "false");
+  // Serial.print(" | Large brake closed: ");
+  // Serial.println(largeBrakeIsClosed ? "true" : "false");
 }
 
 void makeReadyToDrive()

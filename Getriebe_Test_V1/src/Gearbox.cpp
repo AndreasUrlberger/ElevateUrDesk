@@ -3,7 +3,6 @@
 
 Gearbox::Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight)
 {
-
 }
 
 Gearbox::~Gearbox()
@@ -39,9 +38,42 @@ void Gearbox::moveToPosition(long targetPosition)
     deskMotor.setNewTargetPosition(targetPosition);
 }
 
-uint32_t Gearbox::getCurrentPosition(){
+uint32_t Gearbox::getCurrentPosition()
+{
     return deskMotor.getCurrentPosition();
 }
 
+BrakeState Gearbox::getCurrentBrakeState() const
+{
+    if (smallBrake.getBrakeState() == BrakeState::OPEN && largeBrake.getBrakeState() == BrakeState::OPEN)
+    {
+        return BrakeState::OPEN;
+    }
+    else if (smallBrake.getBrakeState() == BrakeState::CLOSED && largeBrake.getBrakeState() == BrakeState::CLOSED)
+    {
+        return BrakeState::CLOSED;
+    }
+    else if (smallBrake.getBrakeState() == BrakeState::ERROR || largeBrake.getBrakeState() == BrakeState::ERROR)
+    {
+        return BrakeState::ERROR;
+    }
+    else
+    {
+        return BrakeState::INTERMEDIATE;
+    }
+}
 
+DeskMotor *const Gearbox::getDeskMotor()
+{
+    return &deskMotor;
+}
 
+Brake *const Gearbox::getSmallBrake()
+{
+    return &smallBrake;
+}
+
+Brake *const Gearbox::getLargeBrake()
+{
+    return &largeBrake;
+}

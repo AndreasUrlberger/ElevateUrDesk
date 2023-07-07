@@ -72,4 +72,6 @@ public:
 
     // OnRequest function for I2C communication with general controller.
     void genCtrlOnRequestI2C();
+
+    Gearbox *const getGearbox() { return &gearbox; }
 };

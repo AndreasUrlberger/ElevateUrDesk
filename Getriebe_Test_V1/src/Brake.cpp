@@ -37,9 +37,16 @@ BrakeState Brake::getBrakeState() const
 void Brake::openBrake()
 {
     // TODO Implement
+    stepper.moveTo(STEPS_TO_GO);
 }
 
 void Brake::closeBrake()
 {
     // TODO Implement
+    stepper.moveTo(-STEPS_TO_GO);
+}
+
+void Brake::step()
+{
+    stepper.run();
 }

@@ -32,4 +32,6 @@ public:
 
     void openBrake();
     void closeBrake();
+
+    void step();
 };
