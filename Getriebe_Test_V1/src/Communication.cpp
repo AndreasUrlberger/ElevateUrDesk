@@ -2,6 +2,8 @@
 #include "Gearbox.hpp"
 #include "Pinout.hpp"
 
+Communication *Communication::instance;
+
 Communication::Communication(float gearboxSensorHeight, float gearboxMathematicalHeight) : gearbox(GEARBOX_NAME, gearboxSensorHeight, gearboxMathematicalHeight)
 {
   instance = this;

@@ -13,7 +13,7 @@ class Communication
     friend class MainLogUtil;
 
 private:
-    static inline Communication *instance;
+    static Communication *instance;
 
     // Command codes for communication with general controller.
     static constexpr char CMD_MOVE_UP = 'u';
