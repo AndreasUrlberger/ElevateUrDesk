@@ -123,7 +123,6 @@ void GearboxCommunication::driveTo(const uint32_t position)
 
 void GearboxCommunication::emergencyStop()
 {
-    // TODO Make sure it has the same response length in the Gearbox code.
     constexpr size_t DATA_LENGTH{5u};
     // Save last position such that both gearboxes get the position from roughly the same time.
     const uint32_t lastPositionRight{positionRight};

@@ -3,24 +3,33 @@
 #include <Arduino.h>
 #include "AccelStepper.h"
 #include "Lightgate.hpp"
-#include "Pinout.hpp"
+
+enum class BrakeState
+{
+    OPEN = 0,
+    INTERMEDIATE = 1,
+    CLOSED = 2,
+    ERROR = 3
+};
 
 class Brake
 {
 private:
-    /* data */
-    AccelStepper primaryStepper{AccelStepper::HALF4WIRE, LARGE_BRAKE_1, LARGE_BRAKE_3, LARGE_BRAKE_2, LARGE_BRAKE_4};
-    AccelStepper secondaryStepper{AccelStepper::HALF4WIRE, SMALL_BRAKE_1, SMALL_BRAKE_3, SMALL_BRAKE_2, SMALL_BRAKE_4};
-    Lightgate lightgate{};
+    static constexpr float MAX_SPEED = 500;        // max speed of primary brake motor
+    static constexpr float MAX_ACCELERATION = 100; // max acceleration of primary brake motor
+    static constexpr long STEPS_TO_GO = 1000;      // steps to go from open to closed
+
+    AccelStepper stepper;
+
+    const Lightgate lightgateOpen;
+    const Lightgate lightgateClosed;
 
 public:
-    Brake(/* args */) = default;
+    Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4);
     ~Brake() = default;
 
-    void setupPrimary();
-    void setupSecondary();
-    int8_t openPrimaryBrake();
-    void openSecondaryBrake();
-    void closePrimaryBrake();
-    void closeSecondaryBrake();
+    BrakeState getBrakeState() const;
+
+    void openBrake();
+    void closeBrake();
 };

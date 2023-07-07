@@ -23,16 +23,22 @@
 #define MotorDiag1 -1 // Alert if motor is stalled ?
 
 // Primary Brake
-#define LARGE_BRAKE_1 32 // 4 // Primary brake motor, input 1
-#define LARGE_BRAKE_2 33 // 0
-#define LARGE_BRAKE_3 25 // 5
-#define LARGE_BRAKE_4 26 // 15
+#define LARGE_BRAKE_1 4
+#define LARGE_BRAKE_2 0
+#define LARGE_BRAKE_3 5
+#define LARGE_BRAKE_4 15
 
 // Secondary Brake
-#define SMALL_BRAKE_1 255 // Secondary brake motor, input 1
+#define SMALL_BRAKE_1 255
 #define SMALL_BRAKE_2 255
 #define SMALL_BRAKE_3 255
 #define SMALL_BRAKE_4 255
+
+// Motor Pins
+#define DESK_MOTOR_1 32
+#define DESK_MOTOR_2 33
+#define DESK_MOTOR_3 25
+#define DESK_MOTOR_4 26
 
 // Lightgates
 #define LIGHTGATE_LARGE_BRAKE_OPEN 36

@@ -26,16 +26,8 @@ private:
 
     DeskMotor deskMotor{maxDeskMotorSpeed, maxDeskMotorAcceleration};
 
-#pragma region REMOVED
-    // std::string nameOfState(GearboxState state);
-
-    // std::string name{};
-    // Lightgate lightgate{};
-    // Brake brake{};
-    // GearboxState state{};
-    // float sensorHeight{};
-    // float mathematicalHeight{};
-#pragma endregion REMOVED
+    Brake smallBrake{LIGHTGATE_SMALL_BRAKE_OPEN, LIGHTGATE_SMALL_BRAKE_CLOSED, SMALL_BRAKE_1, SMALL_BRAKE_2, SMALL_BRAKE_3, SMALL_BRAKE_4};
+    Brake largeBrake{LIGHTGATE_LARGE_BRAKE_OPEN, LIGHTGATE_LARGE_BRAKE_CLOSED, LARGE_BRAKE_1, LARGE_BRAKE_2, LARGE_BRAKE_3, LARGE_BRAKE_4};
 
 public:
     Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight);
@@ -49,9 +41,23 @@ public:
     void moveToPosition(long targetPosition);
 
     uint32_t getCurrentPosition();
-    uint8_t getCurrentBrakeState() const
+    BrakeState getCurrentBrakeState() const
     {
-        // TODO Implement
-        return 0u;
+        if (smallBrake.getBrakeState() == BrakeState::OPEN && largeBrake.getBrakeState() == BrakeState::OPEN)
+        {
+            return BrakeState::OPEN;
+        }
+        else if (smallBrake.getBrakeState() == BrakeState::CLOSED && largeBrake.getBrakeState() == BrakeState::CLOSED)
+        {
+            return BrakeState::CLOSED;
+        }
+        else if (smallBrake.getBrakeState() == BrakeState::ERROR || largeBrake.getBrakeState() == BrakeState::ERROR)
+        {
+            return BrakeState::ERROR;
+        }
+        else
+        {
+            return BrakeState::INTERMEDIATE;
+        }
     }
 };

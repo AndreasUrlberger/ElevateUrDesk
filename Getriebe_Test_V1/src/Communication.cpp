@@ -113,7 +113,7 @@ void Communication::genCtrlMoveUp()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
+  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -162,7 +162,7 @@ void Communication::genCtrlMoveDown()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
+  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -207,7 +207,7 @@ void Communication::genCtrlMoveTo()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
+  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -246,7 +246,7 @@ void Communication::genCtrlEmergencyStop()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
+  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -265,7 +265,7 @@ void Communication::genCtrlGetPosition()
   uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
+  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)

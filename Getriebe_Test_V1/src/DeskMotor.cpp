@@ -14,7 +14,6 @@ void IRAM_ATTR onDeskMotorTimer()
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
-    Serial.println("DeskMotor constructor called.");
     instance = this;
     deskMotor.setCurrentPosition(0);
     deskMotor.setMaxSpeed(maxSpeed);

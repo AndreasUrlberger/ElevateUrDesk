@@ -3,48 +3,43 @@
 #include "Brake.hpp"
 #include "Lightgate.hpp"
 
-float primaryMaxSpeed = 500;        // max speed of primary brake motor
-float primaryMaxAcceleration = 100; // max acceleration of primary brake motor
-long primaryStepsNeeded = 1000;     // steps to go from open to closed
-
-float secondaryMaxSpeed = 500;
-float secondaryMaxAcceleration = 100;
-long secondaryStepsNeeded = 1000;
-
-void Brake::setupPrimary()
+Brake::Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4) : lightgateOpen(lightgateOpenPin), lightgateClosed(lightgateClosedPin), stepper(AccelStepper::HALF4WIRE, brakePin1, brakePin3, brakePin2, brakePin4)
 {
-    primaryStepper.setMaxSpeed(primaryMaxSpeed);
-    primaryStepper.setAcceleration(primaryMaxAcceleration);
-    Serial.printf("Primary Brake Stepper initialized");
+    stepper.setMaxSpeed(MAX_SPEED);
+    stepper.setAcceleration(MAX_ACCELERATION);
 }
 
-void Brake::setupSecondary()
-{
-    secondaryStepper.setMaxSpeed(secondaryMaxSpeed);
-    secondaryStepper.setAcceleration(secondaryMaxAcceleration);
-    Serial.printf("Secondary Brake Stepper initialized");
-}
+// TODO Implement stepping functionality like in DeskMotor.cpp
 
-int8_t Brake::openPrimaryBrake() // return 1 = succesfully opened; 0 = still closed; -1 = status undefined
+BrakeState Brake::getBrakeState() const
 {
-    primaryStepper.move(primaryStepsNeeded);
-    if (primaryStepper.distanceToGo() != 0)
+    const bool open = lightgateOpen.isLightgateBlocked();
+    const bool closed = lightgateClosed.isLightgateBlocked();
+
+    if (!open && !closed)
     {
-        primaryStepper.run();
+        return BrakeState::INTERMEDIATE;
     }
-    int8_t LightgateStatus = lightgate.CheckPrimaryStatus();
-    return LightgateStatus;
+    else if (open && !closed)
+    {
+        return BrakeState::OPEN;
+    }
+    else if (!open && closed)
+    {
+        return BrakeState::CLOSED;
+    }
+    else
+    {
+        return BrakeState::ERROR;
+    }
 }
 
-void Brake::openSecondaryBrake()
+void Brake::openBrake()
 {
+    // TODO Implement
 }
 
-void Brake::closePrimaryBrake()
+void Brake::closeBrake()
 {
-    primaryStepper.move(-primaryStepsNeeded);
-}
-
-void Brake::closeSecondaryBrake()
-{
+    // TODO Implement
 }

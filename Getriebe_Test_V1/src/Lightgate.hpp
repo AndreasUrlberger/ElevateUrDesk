@@ -1,20 +1,15 @@
 #pragma once
 
 #include <Arduino.h>
-#include "Pinout.hpp"
 
 class Lightgate
 {
 private:
-    /* data */
+    const uint8_t brakePin{};
 
 public:
-    Lightgate(/* args */) = default;
+    Lightgate(const uint8_t brakePin);
     ~Lightgate() = default;
 
-    void setup();
-    void CheckClosed();
-    bool CheckPrimaryClosed();
-    void CheckSecondaryClosed();
-    int8_t CheckPrimaryStatus();
+    bool isLightgateBlocked() const;
 };
