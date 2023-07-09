@@ -23,28 +23,28 @@
 #define MotorDiag1 -1 // Alert if motor is stalled ?
 
 // Primary Brake
-#define LARGE_BRAKE_1 4
-#define LARGE_BRAKE_2 0
-#define LARGE_BRAKE_3 5
-#define LARGE_BRAKE_4 15
+#define LARGE_BRAKE_1 27
+#define LARGE_BRAKE_2 14
+#define LARGE_BRAKE_3 12
+#define LARGE_BRAKE_4 13
 
 // Secondary Brake
-#define SMALL_BRAKE_1 255
-#define SMALL_BRAKE_2 255
-#define SMALL_BRAKE_3 255
-#define SMALL_BRAKE_4 255
+#define SMALL_BRAKE_1 32
+#define SMALL_BRAKE_2 33
+#define SMALL_BRAKE_3 25
+#define SMALL_BRAKE_4 26
 
 // Motor Pins
-#define DESK_MOTOR_1 32
-#define DESK_MOTOR_2 33
-#define DESK_MOTOR_3 25
-#define DESK_MOTOR_4 26
+#define DESK_MOTOR_1 23
+#define DESK_MOTOR_2 19
+#define DESK_MOTOR_3 18
+#define DESK_MOTOR_4 5
 
 // Lightgates
 #define LIGHTGATE_LARGE_BRAKE_OPEN 36
 #define LIGHTGATE_LARGE_BRAKE_CLOSED 39
-#define LIGHTGATE_SMALL_BRAKE_OPEN 255
-#define LIGHTGATE_SMALL_BRAKE_CLOSED 255
+#define LIGHTGATE_SMALL_BRAKE_OPEN 34
+#define LIGHTGATE_SMALL_BRAKE_CLOSED 35
 
 // Relay
 #define RELAT_3V -1  // for turning the motor control board on and off

@@ -40,7 +40,7 @@ private:
     };
 
     GearboxCommunication *const gearbox{};
-    std::queue<InputEvent *> eventQueue;
+    std::queue<InputEvent *> *const eventQueue{};
     UiState uiState{UiState::Idle};
     GearboxState gearboxState{GearboxState::OnBrake};
 
@@ -61,7 +61,7 @@ private:
     void gearboxDriveMode();
 
 public:
-    InputController(GearboxCommunication *const gearbox, std::queue<InputEvent *> eventQueue) : gearbox(gearbox), eventQueue(eventQueue) {}
+    InputController(GearboxCommunication *const gearbox, std::queue<InputEvent *> *const eventQueue) : gearbox(gearbox), eventQueue(eventQueue) {}
     ~InputController() = default;
 
     void update();

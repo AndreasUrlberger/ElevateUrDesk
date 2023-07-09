@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+typedef uint8_t BrakeState;
+
 class GearboxCommunication
 {
 private:
@@ -11,6 +13,8 @@ private:
     static constexpr char CMD_MOVE_TO = 'm';
     static constexpr char CMD_EMERGENCY_STOP = 'e';
     static constexpr char CMD_GET_POSITION = 'p';
+    static constexpr char CMD_LOOSEN_BRAKE = 'l';
+    static constexpr char CMD_FASTEN_BRAKE = 'f';
 
     const uint8_t addressLeft{};
     const uint8_t addressRight{};
@@ -24,9 +28,10 @@ private:
     void processResponse(const uint8_t *const response, const bool isLeftGearbox);
 
 public:
-    static constexpr uint8_t BRAKE_STATE_LOCKED = 0;
-    static constexpr uint8_t BRAKE_STATE_INTERMEDIARY = 1;
-    static constexpr uint8_t BRAKE_STATE_UNLOCKED = 3;
+    static constexpr BrakeState BRAKE_STATE_LOCKED = 0;
+    static constexpr BrakeState BRAKE_STATE_INTERMEDIARY = 1;
+    static constexpr BrakeState BRAKE_STATE_UNLOCKED = 3;
+    static constexpr BrakeState BRAKE_STATE_ERROR = 2;
 
     GearboxCommunication(const uint8_t gearboxLeftAddress, const uint8_t gearboxRightAddress, TwoWire *i2c, const int i2cSdaPin, const int i2cSclPin, const uint32_t i2cFrequency);
     ~GearboxCommunication() = default;
@@ -36,6 +41,8 @@ public:
     void driveTo(const uint32_t position);
     void emergencyStop();
     void getPosition();
+    void loosenBrake();
+    void fastenBrake();
 
     uint32_t getPositionLeft() const { return positionLeft; };
     uint32_t getPositionRight() const { return positionRight; };

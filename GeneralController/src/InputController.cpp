@@ -5,18 +5,185 @@ void InputController::update()
     updateUiStateMachine();
     updateGearboxStateMachine();
 
-    Serial.print("Gearbox position left: ");
-    Serial.print(gearbox->getPositionLeft());
-    Serial.print(" right: ");
-    Serial.println(gearbox->getPositionRight());
+    static uint32_t lastPosLeft = -1;
+    static uint32_t lastPosRight = -1;
+
+    if (lastPosLeft != gearbox->getPositionLeft() || lastPosRight != gearbox->getPositionRight())
+    {
+        Serial.print("Gearbox position left: ");
+        Serial.print(gearbox->getPositionLeft());
+        Serial.print(" right: ");
+        Serial.println(gearbox->getPositionRight());
+
+        lastPosLeft = gearbox->getPositionLeft();
+        lastPosRight = gearbox->getPositionRight();
+    }
+
+    static UiState lastUiState = UiState::MoveDown;
+    if (lastUiState != uiState)
+    {
+        Serial.print("UI State: ");
+        switch (uiState)
+        {
+        case UiState::Idle:
+            Serial.println("Idle");
+            break;
+        case UiState::DriveControl:
+            Serial.println("DriveControl");
+            break;
+        case UiState::MoveUp:
+            Serial.println("MoveUp");
+            break;
+        case UiState::MoveDown:
+            Serial.println("MoveDown");
+            break;
+        case UiState::MoveTo:
+            Serial.println("MoveTo");
+            break;
+        }
+
+        lastUiState = uiState;
+    }
+
+    static GearboxState lastGearboxState = GearboxState::LockingBrakes;
+    if (lastGearboxState != gearboxState)
+    {
+        Serial.print("Gearbox State: ");
+        switch (gearboxState)
+        {
+        case GearboxState::OnBrake:
+            Serial.println("OnBrake");
+            break;
+        case GearboxState::LockingBrakes:
+            Serial.println("LockingBrakes");
+            break;
+        case GearboxState::UnlockingBrakes:
+            Serial.println("UnlockingBrakes");
+            break;
+        case GearboxState::DriveMode:
+            Serial.println("DriveMode");
+            break;
+        }
+
+        lastGearboxState = gearboxState;
+    }
+
+    static BrakeState lastBrakeStateLeft = 255;
+    if (lastBrakeStateLeft != gearbox->getBrakeStateLeft())
+    {
+        Serial.print("Brake State Left: ");
+        Serial.print(static_cast<uint32_t>(gearbox->getBrakeStateLeft()));
+        Serial.print(" ");
+        // Print name of brake state
+        switch (gearbox->getBrakeStateLeft())
+        {
+        case GearboxCommunication::BRAKE_STATE_UNLOCKED:
+            Serial.println("BRAKE_STATE_UNLOCKED");
+            break;
+        case GearboxCommunication::BRAKE_STATE_LOCKED:
+            Serial.println("BRAKE_STATE_LOCKED");
+            break;
+        case GearboxCommunication::BRAKE_STATE_INTERMEDIARY:
+            Serial.println("BRAKE_STATE_INTERMEDIARY");
+            break;
+        case GearboxCommunication::BRAKE_STATE_ERROR:
+            Serial.println("BRAKE_STATE_ERROR");
+            break;
+        default:
+            Serial.println("Unknown");
+            break;
+        }
+
+        lastBrakeStateLeft = gearbox->getBrakeStateLeft();
+    }
+
+    static BrakeState lastBrakeStateRight = 255;
+    if (lastBrakeStateRight != gearbox->getBrakeStateRight())
+    {
+        Serial.print("Brake State Right: ");
+        // Print name of brake state
+        switch (gearbox->getBrakeStateRight())
+        {
+        case GearboxCommunication::BRAKE_STATE_UNLOCKED:
+            Serial.println("BRAKE_STATE_UNLOCKED");
+            break;
+        case GearboxCommunication::BRAKE_STATE_LOCKED:
+            Serial.println("BRAKE_STATE_LOCKED");
+            break;
+        case GearboxCommunication::BRAKE_STATE_INTERMEDIARY:
+            Serial.println("BRAKE_STATE_INTERMEDIARY");
+            break;
+        default:
+            Serial.println("Unknown");
+            break;
+        }
+
+        lastBrakeStateRight = gearbox->getBrakeStateRight();
+    }
 }
 
 void InputController::updateUiStateMachine()
 {
     // Process all input event in UI State Machine.
-    while (!eventQueue.empty())
+    while (!eventQueue->empty())
     {
-        InputEvent *const event = eventQueue.front();
+        InputEvent *const event = eventQueue->front();
+
+        // Print Event.
+        Serial.print("Button: ");
+        // Print name of button
+        switch (event->buttonId)
+        {
+        case ButtonEvents::ID_MAIN:
+            Serial.print("Main");
+            break;
+        case ButtonEvents::ID_MOVE_UP:
+            Serial.print("Up");
+            break;
+        case ButtonEvents::ID_MOVE_DOWN:
+            Serial.print("Down");
+            break;
+        case ButtonEvents::ID_SHORTCUT_1:
+            Serial.print("Shortcut 1");
+            break;
+        case ButtonEvents::ID_SHORTCUT_2:
+            Serial.print("Shortcut 2");
+            break;
+        default:
+            Serial.print("Unknown");
+            break;
+        }
+
+        Serial.print(", Event: ");
+        // Print name of event
+        switch (event->buttonEvent)
+        {
+        case ButtonEvents::BUTTON_PRESSED:
+            Serial.println("BUTTON_PRESSED");
+            break;
+        case ButtonEvents::BUTTON_RELEASED:
+            Serial.println("BUTTON_RELEASED");
+            break;
+        case ButtonEvents::LONG_CLICK:
+            Serial.println("LONG_CLICK");
+            break;
+        case ButtonEvents::DOUBLE_CLICK:
+            Serial.println("DOUBLE_CLICK");
+            break;
+        case ButtonEvents::SINGLE_CLICK:
+            Serial.println("SINGLE_CLICK");
+            break;
+        case ButtonEvents::START_DOUBLE_HOLD_CLICK:
+            Serial.println("START_DOUBLE_HOLD_CLICK");
+            break;
+        case ButtonEvents::END_DOUBLE_HOLD_CLICK:
+            Serial.println("END_DOUBLE_HOLD_CLICK");
+            break;
+        default:
+            Serial.println("Unknown");
+            break;
+        }
+
         switch (uiState)
         {
         case UiState::Idle:
@@ -36,7 +203,7 @@ void InputController::updateUiStateMachine()
             break;
         }
 
-        eventQueue.pop();
+        eventQueue->pop();
         delete event;
     }
 }
@@ -70,6 +237,26 @@ void InputController::updateGearboxStateMachine()
         gearbox->emergencyStop();
         // TODO Not perfect.
         gearboxState = GearboxState::LockingBrakes;
+        return;
+    }
+
+    switch (gearboxState)
+    {
+    case GearboxState::UnlockingBrakes:
+        gearbox->loosenBrake();
+        break;
+    case GearboxState::LockingBrakes:
+        gearbox->fastenBrake();
+        break;
+    case GearboxState::DriveMode:
+        // TODO Implement
+        break;
+    case GearboxState::OnBrake:
+        gearbox->getPosition();
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -197,7 +384,10 @@ void InputController::gearboxLockingBrakes()
         return;
     }
 
-    // TODO Check if brakes are locked, then switch to on brake state.
+    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_LOCKED)
+    {
+        gearboxState = GearboxState::OnBrake;
+    }
 }
 
 void InputController::gearboxUnlockingBrakes()
@@ -210,7 +400,10 @@ void InputController::gearboxUnlockingBrakes()
         return;
     }
 
-    // TODO Check if brakes are unlocked, then switch to drive mode.
+    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
+    {
+        gearboxState = GearboxState::DriveMode;
+    }
 }
 
 void InputController::gearboxDriveMode()

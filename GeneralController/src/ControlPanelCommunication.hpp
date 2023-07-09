@@ -7,7 +7,7 @@
 class ControlPanelCommunication
 {
 private:
-    std::queue<InputEvent *> eventQueue;
+    std::queue<InputEvent *> *const eventQueue{};
 
     std::string controlPanelMsgBuffer{""};
     uint8_t expectedMsgLength{0u};
@@ -16,7 +16,7 @@ private:
     void processMessage(const char *message, size_t messageLength);
 
 public:
-    ControlPanelCommunication(std::queue<InputEvent *> eventQueue, const int8_t tx_pin, const int8_t rx_pin, const uint32_t config, const uint32_t baudrate);
+    ControlPanelCommunication(std::queue<InputEvent *> *const eventQueue, const int8_t tx_pin, const int8_t rx_pin, const uint32_t config, const uint32_t baudrate);
     ~ControlPanelCommunication() = default;
 
     bool update();

@@ -39,6 +39,8 @@ public:
     void moveUp(uint32_t penalty);
     void moveDown(uint32_t penalty);
     void moveToPosition(long targetPosition);
+    void loosenBrakes();
+    void fastenBrakes();
 
     uint32_t getCurrentPosition();
     BrakeState getCurrentBrakeState() const;

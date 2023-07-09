@@ -18,19 +18,19 @@ BrakeState Brake::getBrakeState() const
 
     if (!open && !closed)
     {
-        return BrakeState::INTERMEDIATE;
+        return Brake::BRAKE_STATE_INTERMEDIARY;
     }
     else if (open && !closed)
     {
-        return BrakeState::OPEN;
+        return Brake::BRAKE_STATE_UNLOCKED;
     }
     else if (!open && closed)
     {
-        return BrakeState::CLOSED;
+        return Brake::BRAKE_STATE_LOCKED;
     }
-    else
+    else // (open && closed) Can only happen if the connection to the lightgates is broken
     {
-        return BrakeState::ERROR;
+        return Brake::BRAKE_STATE_ERROR;
     }
 }
 

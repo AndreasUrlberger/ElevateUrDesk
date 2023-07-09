@@ -2,7 +2,7 @@
 
 #define Uart Serial2
 
-ControlPanelCommunication::ControlPanelCommunication(std::queue<InputEvent *> eventQueue, const int8_t tx_pin, const int8_t rx_pin, const uint32_t config, const uint32_t baudrate) : eventQueue(eventQueue)
+ControlPanelCommunication::ControlPanelCommunication(std::queue<InputEvent *> *const eventQueue, const int8_t tx_pin, const int8_t rx_pin, const uint32_t config, const uint32_t baudrate) : eventQueue(eventQueue)
 {
     Uart.begin(baudrate, config, rx_pin, tx_pin);
 }
@@ -22,7 +22,7 @@ void ControlPanelCommunication::processMessage(const char *message, size_t messa
         const uint8_t buttonId = static_cast<uint8_t>(message[1u + (i * 4u)]);
         const uint8_t buttonEvent = static_cast<uint8_t>(message[3u + (i * 4u)]);
 
-        eventQueue.push(new InputEvent(buttonId, buttonEvent));
+        eventQueue->push(new InputEvent(buttonId, buttonEvent));
     }
 }
 

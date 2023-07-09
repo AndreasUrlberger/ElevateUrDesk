@@ -45,21 +45,21 @@ uint32_t Gearbox::getCurrentPosition()
 
 BrakeState Gearbox::getCurrentBrakeState() const
 {
-    if (smallBrake.getBrakeState() == BrakeState::OPEN && largeBrake.getBrakeState() == BrakeState::OPEN)
+    if (smallBrake.getBrakeState() == Brake::BRAKE_STATE_UNLOCKED && largeBrake.getBrakeState() == Brake::BRAKE_STATE_UNLOCKED)
     {
-        return BrakeState::OPEN;
+        return Brake::BRAKE_STATE_UNLOCKED;
     }
-    else if (smallBrake.getBrakeState() == BrakeState::CLOSED && largeBrake.getBrakeState() == BrakeState::CLOSED)
+    else if (smallBrake.getBrakeState() == Brake::BRAKE_STATE_LOCKED && largeBrake.getBrakeState() == Brake::BRAKE_STATE_LOCKED)
     {
-        return BrakeState::CLOSED;
+        return Brake::BRAKE_STATE_LOCKED;
     }
-    else if (smallBrake.getBrakeState() == BrakeState::ERROR || largeBrake.getBrakeState() == BrakeState::ERROR)
+    else if (smallBrake.getBrakeState() == Brake::BRAKE_STATE_ERROR || largeBrake.getBrakeState() == Brake::BRAKE_STATE_ERROR)
     {
-        return BrakeState::ERROR;
+        return Brake::BRAKE_STATE_ERROR;
     }
     else
     {
-        return BrakeState::INTERMEDIATE;
+        return Brake::BRAKE_STATE_INTERMEDIARY;
     }
 }
 
@@ -76,4 +76,16 @@ Brake *const Gearbox::getSmallBrake()
 Brake *const Gearbox::getLargeBrake()
 {
     return &largeBrake;
+}
+
+void Gearbox::loosenBrakes()
+{
+    smallBrake.openBrake();
+    largeBrake.openBrake();
+}
+
+void Gearbox::fastenBrakes()
+{
+    smallBrake.closeBrake();
+    largeBrake.closeBrake();
 }

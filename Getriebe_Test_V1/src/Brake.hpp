@@ -4,13 +4,7 @@
 #include "AccelStepper.h"
 #include "Lightgate.hpp"
 
-enum class BrakeState
-{
-    OPEN = 0,
-    INTERMEDIATE = 1,
-    CLOSED = 2,
-    ERROR = 3
-};
+typedef uint8_t BrakeState;
 
 class Brake
 {
@@ -25,6 +19,11 @@ private:
     const Lightgate lightgateClosed;
 
 public:
+    static constexpr BrakeState BRAKE_STATE_LOCKED = 0;
+    static constexpr BrakeState BRAKE_STATE_INTERMEDIARY = 1;
+    static constexpr BrakeState BRAKE_STATE_UNLOCKED = 3;
+    static constexpr BrakeState BRAKE_STATE_ERROR = 2;
+
     Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4);
     ~Brake() = default;
 

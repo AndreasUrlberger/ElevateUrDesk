@@ -21,6 +21,8 @@ private:
     static constexpr char CMD_MOVE_TO = 'm';
     static constexpr char CMD_EMERGENCY_STOP = 'e';
     static constexpr char CMD_GET_POSITION = 'p';
+    static constexpr char CMD_LOOSEN_BRAKE = 'l';
+    static constexpr char CMD_FASTEN_BRAKE = 'f';
 
     // I2C settings for communication with general controller.
     static constexpr int I2C_SDA_PIN = 21;
@@ -57,12 +59,16 @@ private:
     void genCtrlMoveTo();
     void genCtrlEmergencyStop();
     void genCtrlGetPosition();
+    void genCtrlLoosenBrake();
+    void genCtrlFastenBrake();
 
 public:
     void performMoveTo(const long targetPosition);
     void performMoveUp(uint32_t penalty);
     void performMoveDown(uint32_t penalty);
     void performEmergencyStop();
+    void performLoosenBrake();
+    void performFastenBrake();
 
     Communication(float gearboxSensorHeight, float gearboxMathematicalHeight);
     ~Communication() = default;

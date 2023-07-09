@@ -27,8 +27,8 @@ std::chrono::steady_clock::duration iterationDuration = std::chrono::millisecond
 
 GearboxCommunication gearbox(GEARBOX_LEFT_ADDRESS, GEARBOX_RIGHT_ADDRESS, &Wire, I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);
 std::queue<InputEvent *> eventQueue;
-InputController inputController(&gearbox, eventQueue);
-ControlPanelCommunication controlPanelCommunication(eventQueue, UART_TX_PIN, UART_RX_PIN, UART_CONFIG, UART_BAUDRATE);
+InputController inputController(&gearbox, &eventQueue);
+ControlPanelCommunication controlPanelCommunication(&eventQueue, UART_TX_PIN, UART_RX_PIN, UART_CONFIG, UART_BAUDRATE);
 
 void setup()
 {
@@ -52,6 +52,7 @@ void loop()
   // Read all messages from the control panel.
   while (controlPanelCommunication.update())
   {
+
   }
 
   inputController.update();

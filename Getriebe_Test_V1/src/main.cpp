@@ -18,54 +18,23 @@ static constexpr float gearboxMathematicalHeight = 0.0f;
 Communication communication{gearboxSensorHeight, gearboxMathematicalHeight};
 MotorTimer motorTimer{communication.getGearbox()->getDeskMotor(), communication.getGearbox()->getSmallBrake(), communication.getGearbox()->getLargeBrake()};
 
-#pragma region DEBUG
-
-class MainLogUtil
-{
-private:
-  MainLogUtil() = delete;
-  ~MainLogUtil() = delete;
-
-public:
-  static void logStuff()
-  {
-    Gearbox *gearbox = communication.getGearbox();
-    DeskMotor *deskMotor = &(gearbox->deskMotor);
-    // Print if deskMotor is running
-    Serial.print("DeskMotor is running: ");
-    Serial.println(deskMotor->isRunning);
-    // Print current target position
-    Serial.print("Current target position: ");
-    Serial.println(deskMotor->deskMotor.targetPosition());
-    // Print current position
-    Serial.print("Current position: ");
-    Serial.println(deskMotor->deskMotor.currentPosition());
-    // Print distance to go
-    Serial.print("Distance to go: ");
-    Serial.println(deskMotor->deskMotor.distanceToGo());
-  }
-};
-#pragma endregion DEBUG
-
 void setup()
 {
   Serial.begin(115200);
   esp_task_wdt_init(UINT32_MAX, false);
   esp_task_wdt_delete(NULL);
 
-  Serial.println("WDT diabled on core 0");
-
-  // TODO Debug only
-  pinMode(18, OUTPUT);
-  pinMode(19, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(DebugButton1, INPUT_PULLUP); // set the digital pin as output
 
   // Initialize lightgate sensors.
-  pinMode(LIGHTGATE_LARGE_BRAKE_OPEN, INPUT_PULLUP);
-  pinMode(LIGHTGATE_LARGE_BRAKE_CLOSED, INPUT_PULLUP);
+  // pinMode(LIGHTGATE_LARGE_BRAKE_OPEN, INPUT_PULLUP);
+  // pinMode(LIGHTGATE_LARGE_BRAKE_CLOSED, INPUT_PULLUP);
 
-  Serial.println("Task1 is running on core " + String(xPortGetCoreID()) + ".");
+  Serial.print("Task1 is running on core ");
+  Serial.println(xPortGetCoreID());
+
+  Serial.println("WDT diabled on core 0");
+
+  // Initialize an i2c bus.
 }
 
 void loop()

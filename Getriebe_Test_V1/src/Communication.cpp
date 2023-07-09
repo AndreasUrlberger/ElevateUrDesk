@@ -1,6 +1,7 @@
 #include "Communication.hpp"
 #include "Gearbox.hpp"
 #include "Pinout.hpp"
+#include "Brake.hpp"
 
 Communication *Communication::instance;
 
@@ -8,6 +9,7 @@ Communication::Communication(float gearboxSensorHeight, float gearboxMathematica
 {
   instance = this;
 
+  Serial.begin(115200);
   Serial.println("Initializing I2C bus");
   bool i2cSuccess = Wire.begin(I2C_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ);
   Serial.print("I2C bus initialized: ");
@@ -41,6 +43,16 @@ void Communication::performMoveDown(uint32_t penalty)
 void Communication::performEmergencyStop()
 {
   gearbox.stopMotor();
+}
+
+void Communication::performLoosenBrake()
+{
+  gearbox.loosenBrakes();
+}
+
+void Communication::performFastenBrake()
+{
+  gearbox.fastenBrakes();
 }
 
 bool Communication::checkForGearboxDeviation(uint32_t currentPosition)
@@ -102,8 +114,35 @@ void Communication::genCtrlOnRequestI2C()
   case CMD_GET_POSITION:
     genCtrlGetPosition();
     break;
+  case CMD_LOOSEN_BRAKE:
+    genCtrlLoosenBrake();
+    break;
+  case CMD_FASTEN_BRAKE:
+    genCtrlFastenBrake();
+    break;
   default:
     Serial.println("Unknown i2c command");
+    break;
+  }
+
+  Serial.print("Brake State: ");
+  // Print name of brake state.
+  switch (gearbox.getCurrentBrakeState())
+  {
+  case Brake::BRAKE_STATE_LOCKED:
+    Serial.println("CLOSED");
+    break;
+  case Brake::BRAKE_STATE_UNLOCKED:
+    Serial.println("OPEN");
+    break;
+  case Brake::BRAKE_STATE_INTERMEDIARY:
+    Serial.println("INTERMEDIATE");
+    break;
+  case Brake::BRAKE_STATE_ERROR:
+    Serial.println("ERROR");
+    break;
+  default:
+    Serial.println("UNKNOWN");
     break;
   }
 }
@@ -112,10 +151,10 @@ void Communication::genCtrlMoveUp()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
+  const uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
+  data[4u] = gearbox.getCurrentBrakeState();
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -161,10 +200,10 @@ void Communication::genCtrlMoveDown()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
+  const uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
+  data[4u] = gearbox.getCurrentBrakeState();
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -206,10 +245,10 @@ void Communication::genCtrlMoveTo()
 
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
+  const uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
+  data[4u] = gearbox.getCurrentBrakeState();
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -245,10 +284,10 @@ void Communication::genCtrlEmergencyStop()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
+  const uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
+  data[4u] = gearbox.getCurrentBrakeState();
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -264,10 +303,10 @@ void Communication::genCtrlGetPosition()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
+  const uint32_t currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = static_cast<uint8_t>(gearbox.getCurrentBrakeState());
+  data[4u] = gearbox.getCurrentBrakeState();
 
   size_t bytesWritten{0u};
   while (bytesWritten < RESPONSE_LENGTH)
@@ -277,4 +316,46 @@ void Communication::genCtrlGetPosition()
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
+}
+
+void Communication::genCtrlLoosenBrake()
+{
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
+  uint32_t currentPosition = gearbox.getCurrentPosition();
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
+
+  size_t bytesWritten{0u};
+  while (bytesWritten < RESPONSE_LENGTH)
+  {
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
+  }
+
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+  Serial.println("LoosenBrake");
+  performLoosenBrake();
+}
+
+void Communication::genCtrlFastenBrake()
+{
+  constexpr size_t RESPONSE_LENGTH{5u};
+  // Send current position and brake state as response.
+  uint32_t currentPosition = gearbox.getCurrentPosition();
+  uint8_t data[RESPONSE_LENGTH]{0u};
+  memcpy(&(data[0u]), &currentPosition, 4u);
+  data[4u] = gearbox.getCurrentBrakeState();
+
+  size_t bytesWritten{0u};
+  while (bytesWritten < RESPONSE_LENGTH)
+  {
+    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
+  }
+
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+  Serial.println("FastenBrake");
+  performFastenBrake();
 }
