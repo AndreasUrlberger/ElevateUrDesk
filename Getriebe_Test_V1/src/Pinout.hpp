@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 // Pinout for Gearbox (ESP32)
 
 // Communication I2C (with Master)

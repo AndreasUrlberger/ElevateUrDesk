@@ -9,8 +9,6 @@ Brake::Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, c
     stepper.setAcceleration(MAX_ACCELERATION);
 }
 
-// TODO Implement stepping functionality like in DeskMotor.cpp
-
 BrakeState Brake::getBrakeState() const
 {
     const bool open = lightgateOpen.isLightgateBlocked();
@@ -36,14 +34,14 @@ BrakeState Brake::getBrakeState() const
 
 void Brake::openBrake()
 {
-    // TODO Implement
-    stepper.moveTo(STEPS_TO_GO);
+    // TODO Implement (would have to move the deks motor up before opening the brake)
+    stepper.moveTo(-STEPS_TO_GO);
 }
 
 void Brake::closeBrake()
 {
     // TODO Implement
-    stepper.moveTo(-STEPS_TO_GO);
+    stepper.moveTo(STEPS_TO_GO);
 }
 
 void Brake::step()

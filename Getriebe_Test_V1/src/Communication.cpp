@@ -125,26 +125,26 @@ void Communication::genCtrlOnRequestI2C()
     break;
   }
 
-  Serial.print("Brake State: ");
-  // Print name of brake state.
-  switch (gearbox.getCurrentBrakeState())
-  {
-  case Brake::BRAKE_STATE_LOCKED:
-    Serial.println("CLOSED");
-    break;
-  case Brake::BRAKE_STATE_UNLOCKED:
-    Serial.println("OPEN");
-    break;
-  case Brake::BRAKE_STATE_INTERMEDIARY:
-    Serial.println("INTERMEDIATE");
-    break;
-  case Brake::BRAKE_STATE_ERROR:
-    Serial.println("ERROR");
-    break;
-  default:
-    Serial.println("UNKNOWN");
-    break;
-  }
+  // Serial.print("Brake State: ");
+  // // Print name of brake state.
+  // switch (gearbox.getCurrentBrakeState())
+  // {
+  // case Brake::BRAKE_STATE_LOCKED:
+  //   Serial.println("CLOSED");
+  //   break;
+  // case Brake::BRAKE_STATE_UNLOCKED:
+  //   Serial.println("OPEN");
+  //   break;
+  // case Brake::BRAKE_STATE_INTERMEDIARY:
+  //   Serial.println("INTERMEDIATE");
+  //   break;
+  // case Brake::BRAKE_STATE_ERROR:
+  //   Serial.println("ERROR");
+  //   break;
+  // default:
+  //   Serial.println("UNKNOWN");
+  //   break;
+  // }
 }
 
 void Communication::genCtrlMoveUp()
