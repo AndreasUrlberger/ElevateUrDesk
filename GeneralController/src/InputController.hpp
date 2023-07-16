@@ -19,6 +19,16 @@ class InputController
 {
 private:
     static constexpr uint32_t MAX_GEARBOX_DEVIATION = 1000u;
+    static constexpr uint32_t UNLOCKING_DRIVE_UP_DISTANCE = 40u;
+
+    // Gearbox Unlocking Drive Up
+    bool firstRun{true};
+    uint32_t startPosition{0u};
+    uint32_t targetPosition{0u};
+
+    // gearbox stop
+    uint32_t lastPositionLeft{0u};
+    uint32_t lastPositionRight{0u};
 
     // UI State Machine
     enum class UiState
@@ -36,6 +46,8 @@ private:
         OnBrake,
         LockingBrakes,
         UnlockingBrakes,
+        UnlockingDriveUp,
+        Stop,
         DriveMode
     };
 
@@ -59,6 +71,11 @@ private:
     void gearboxLockingBrakes();
     void gearboxUnlockingBrakes();
     void gearboxDriveMode();
+    void gearboxUnlockingDriveUp();
+    void gearboxStop();
+
+    void performUnlockingDriveUp();
+    void performDriveMode();
 
 public:
     InputController(GearboxCommunication *const gearbox, std::queue<InputEvent *> *const eventQueue) : gearbox(gearbox), eventQueue(eventQueue) {}

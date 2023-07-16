@@ -34,7 +34,7 @@ BrakeState Brake::getBrakeState() const
 
 void Brake::openBrake()
 {
-    // TODO Implement (would have to move the deks motor up before opening the brake)
+    // TODO Implement (would have to move the desk motor up before opening the brake)
     stepper.moveTo(-STEPS_TO_GO);
 }
 
