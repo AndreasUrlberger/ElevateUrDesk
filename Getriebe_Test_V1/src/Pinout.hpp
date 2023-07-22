@@ -25,10 +25,10 @@
 #define MotorDiag1 -1 // Alert if motor is stalled ?
 
 // Primary Brake
-#define LARGE_BRAKE_1 27
-#define LARGE_BRAKE_2 14
-#define LARGE_BRAKE_3 12
-#define LARGE_BRAKE_4 13
+#define LARGE_BRAKE_1 23
+#define LARGE_BRAKE_2 19
+#define LARGE_BRAKE_3 18
+#define LARGE_BRAKE_4 5
 
 // Secondary Brake
 #define SMALL_BRAKE_1 32
@@ -36,11 +36,16 @@
 #define SMALL_BRAKE_3 25
 #define SMALL_BRAKE_4 26
 
-// Motor Pins
-#define DESK_MOTOR_1 23
-#define DESK_MOTOR_2 19
-#define DESK_MOTOR_3 18
-#define DESK_MOTOR_4 5
+// DeskMotor
+#define DESK_MOTOR_CS_PIN 15
+#define DESK_MOTOR_R_SENSE 0.11f
+#define DESK_MOTOR_STEP_PIN 17
+#define DESK_MOTOR_DIR_PIN 27
+#define DESK_MOTOR_EN_PIN 16
+#define DESK_MOTOR_SPI_MOSI 13
+#define DESK_MOTOR_SPI_MISO 12
+#define DESK_MOTOR_SPI_SCK 14
+#define DESK_MOTOR_SPI_SS 15
 
 // Lightgates
 #define LIGHTGATE_LARGE_BRAKE_OPEN 36

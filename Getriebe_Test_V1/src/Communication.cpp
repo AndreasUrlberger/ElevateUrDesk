@@ -125,6 +125,14 @@ void Communication::genCtrlOnRequestI2C()
     break;
   }
 
+  static uint32_t iteration{0u};
+  if (iteration % 200u == 0u)
+  {
+    Serial.print("Current skipped steps: ");
+    Serial.println(gearbox.getDeskMotor()->hwReadSkippedSteps());
+  }
+  iteration++;
+
   // Serial.print("Brake State: ");
   // // Print name of brake state.
   // switch (gearbox.getCurrentBrakeState())

@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "Pinout.hpp"
+#include <TMCStepper.h>
 #include <AccelStepper.h>
 #include <atomic>
 
@@ -11,7 +12,9 @@ class DeskMotor
     friend class MainLogUtil;
 
 private:
-    AccelStepper deskMotor{AccelStepper::HALF4WIRE, DESK_MOTOR_1, DESK_MOTOR_2, DESK_MOTOR_3, DESK_MOTOR_4};
+    TMC2130Stepper driver = TMC2130Stepper(DESK_MOTOR_CS_PIN, DESK_MOTOR_R_SENSE); // Hardware SPI
+    AccelStepper deskMotor = AccelStepper(deskMotor.DRIVER, DESK_MOTOR_STEP_PIN, DESK_MOTOR_DIR_PIN);
+
     float maxSpeed{}; // max speed of main motor
     float maxAcceleration{};
     /*volatile*/ long targetPosition{0}; // current target position of the motor
@@ -52,4 +55,6 @@ public:
 
     void moveUp(uint32_t penalty);
     void moveDown(uint32_t penalty);
+
+    uint32_t hwReadSkippedSteps();
 };

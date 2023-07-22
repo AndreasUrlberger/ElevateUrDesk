@@ -6,9 +6,24 @@
 
 DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpeed(maxSpeed), maxAcceleration(maxAcceleration)
 {
+    SPI.begin(DESK_MOTOR_SPI_SCK, DESK_MOTOR_SPI_MISO, DESK_MOTOR_SPI_MOSI, DESK_MOTOR_SPI_SS);
+
+    pinMode(DESK_MOTOR_CS_PIN, OUTPUT);
+    digitalWrite(DESK_MOTOR_CS_PIN, LOW);
+
+    driver.begin();           // Initiate pins and registeries
+    driver.rms_current(600);  // Set stepper current to 600mA. The command is the same as command TMC2130.setCurrent(600, 0.11, 0.5);
+    driver.en_pwm_mode(true); // Enable extremely quiet stepping
+    driver.pwm_autoscale(true);
+    driver.microsteps(0); // We need to set zero microsteps for the step multiplier(each step translates to 256 microsteps) to work.
+    driver.intpol(true);  // Enable interpolation for step multiplier
+
     deskMotor.setCurrentPosition(0);
     deskMotor.setMaxSpeed(maxSpeed);
     deskMotor.setAcceleration(maxAcceleration);
+    deskMotor.setEnablePin(DESK_MOTOR_EN_PIN);
+    deskMotor.setPinsInverted(false, false, true);
+    deskMotor.enableOutputs();
 
     Serial.printf("Main motor initialized\n");
 }
@@ -166,6 +181,11 @@ void DeskMotor::moveDown(uint32_t penalty)
 
     // Set target position.
     setNewTargetPosition(targetPosition);
+}
+
+uint32_t DeskMotor::hwReadSkippedSteps()
+{
+    return driver.LOST_STEPS();
 }
 
 long DeskMotor::calculateDeltaSteps(float currentSpeed)

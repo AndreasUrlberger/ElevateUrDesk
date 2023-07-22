@@ -60,6 +60,12 @@ void InputController::update()
         case GearboxState::UnlockingBrakes:
             Serial.println("UnlockingBrakes");
             break;
+        case GearboxState::UnlockingDriveUp:
+            Serial.println("UnlockingDriveUp");
+            break;
+        case GearboxState::Stop:
+            Serial.println("Stop");
+            break;
         case GearboxState::DriveMode:
             Serial.println("DriveMode");
             break;
@@ -456,14 +462,14 @@ void InputController::gearboxStop()
     // Handle change in UI state.
     if (uiState == UiState::MoveUp || uiState == UiState::MoveDown || uiState == UiState::MoveTo)
     {
-        gearboxState = GearboxState::DriveMode;
+        gearboxState = GearboxState::UnlockingBrakes;
         return;
     }
 
     if (lastPositionLeft == gearbox->getPositionLeft() && lastPositionRight == gearbox->getPositionRight())
     {
         // No change in position -> No movement -> Lock brakes.
-        gearboxState = GearboxState::OnBrake;
+        gearboxState = GearboxState::LockingBrakes;
     }
 }
 
@@ -474,8 +480,9 @@ void InputController::performUnlockingDriveUp()
         firstRun = false;
         startPosition = max(gearbox->getPositionLeft(), gearbox->getPositionRight());
         targetPosition = startPosition + UNLOCKING_DRIVE_UP_DISTANCE;
-        gearbox->driveTo(targetPosition);
     }
+
+    gearbox->driveTo(targetPosition);
 
     // Check if target position is reached.
     if (gearbox->getPositionLeft() >= targetPosition && gearbox->getPositionRight() >= targetPosition)

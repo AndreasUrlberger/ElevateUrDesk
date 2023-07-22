@@ -5,7 +5,6 @@
 #include "Gearbox.hpp"
 #include "Pinout.hpp"
 #include "Communication.hpp"
-#include "DebugControls.hpp"
 #include <esp_task_wdt.h>
 #include <chrono>
 #include <thread>
