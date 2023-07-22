@@ -221,6 +221,7 @@ void InputController::updateUiStateMachine()
 void InputController::updateGearboxStateMachine()
 {
     // Update gearbox state machine.
+    // TODO Set enable pin in each state to only enable the motor when the desk is moving or is about to move.
     switch (gearboxState)
     {
     case GearboxState::OnBrake:
@@ -253,6 +254,7 @@ void InputController::updateGearboxStateMachine()
         // Emergency stop.
         gearbox->emergencyStop();
         // TODO Not perfect.
+        // TODO Maybe check if the gearbox is in an emergency state whenever it shall drive. Maybe also add an emergency stop UI State.
         gearboxState = GearboxState::LockingBrakes;
         return;
     }

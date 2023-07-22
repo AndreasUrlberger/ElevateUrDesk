@@ -17,6 +17,8 @@ DeskMotor::DeskMotor(const float maxSpeed, const float maxAcceleration) : maxSpe
     driver.pwm_autoscale(true);
     driver.microsteps(0); // We need to set zero microsteps for the step multiplier(each step translates to 256 microsteps) to work.
     driver.intpol(true);  // Enable interpolation for step multiplier
+    // TODO Enable 'dc step' (Enable us to get skipped steps)
+    // TODO Enable low energy usage when motor is not moving
 
     deskMotor.setCurrentPosition(0);
     deskMotor.setMaxSpeed(maxSpeed);

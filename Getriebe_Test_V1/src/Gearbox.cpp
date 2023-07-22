@@ -46,38 +46,38 @@ uint32_t Gearbox::getCurrentPosition()
 BrakeState Gearbox::getCurrentBrakeState() const
 {
     // Print state of both brakes as text.
-    Serial.print("Small brake state: ");
-    switch (smallBrake.getBrakeState())
-    {
-    case Brake::BRAKE_STATE_LOCKED:
-        Serial.print("Locked");
-        break;
-    case Brake::BRAKE_STATE_INTERMEDIARY:
-        Serial.print("Intermediary");
-        break;
-    case Brake::BRAKE_STATE_UNLOCKED:
-        Serial.print("Unlocked");
-        break;
-    case Brake::BRAKE_STATE_ERROR:
-        Serial.print("Error");
-        break;
-    }
-    Serial.print(" Large brake state: ");
-    switch (largeBrake.getBrakeState())
-    {
-    case Brake::BRAKE_STATE_LOCKED:
-        Serial.println("Locked");
-        break;
-    case Brake::BRAKE_STATE_INTERMEDIARY:
-        Serial.println("Intermediary");
-        break;
-    case Brake::BRAKE_STATE_UNLOCKED:
-        Serial.println("Unlocked");
-        break;
-    case Brake::BRAKE_STATE_ERROR:
-        Serial.println("Error");
-        break;
-    }
+    // Serial.print("Small brake state: ");
+    // switch (smallBrake.getBrakeState())
+    // {
+    // case Brake::BRAKE_STATE_LOCKED:
+    //     Serial.print("Locked");
+    //     break;
+    // case Brake::BRAKE_STATE_INTERMEDIARY:
+    //     Serial.print("Intermediary");
+    //     break;
+    // case Brake::BRAKE_STATE_UNLOCKED:
+    //     Serial.print("Unlocked");
+    //     break;
+    // case Brake::BRAKE_STATE_ERROR:
+    //     Serial.print("Error");
+    //     break;
+    // }
+    // Serial.print(" Large brake state: ");
+    // switch (largeBrake.getBrakeState())
+    // {
+    // case Brake::BRAKE_STATE_LOCKED:
+    //     Serial.println("Locked");
+    //     break;
+    // case Brake::BRAKE_STATE_INTERMEDIARY:
+    //     Serial.println("Intermediary");
+    //     break;
+    // case Brake::BRAKE_STATE_UNLOCKED:
+    //     Serial.println("Unlocked");
+    //     break;
+    // case Brake::BRAKE_STATE_ERROR:
+    //     Serial.println("Error");
+    //     break;
+    // }
 
     if (smallBrake.getBrakeState() == Brake::BRAKE_STATE_UNLOCKED && largeBrake.getBrakeState() == Brake::BRAKE_STATE_UNLOCKED)
     {
