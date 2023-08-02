@@ -27,7 +27,7 @@ void setupDemo()
   Serial.println();
   // initialize everything, 0x00 is the i2c address for the first one (0x70 is added in the class).
   HT.begin(0x00, LED_I2C_SDA, LED_I2C_SCL);
-  HT.setBrightness(15);
+  HT.setBrightness(0);
   HT.clearAll();
   HT.displayOn();
 }
@@ -41,7 +41,7 @@ void loopDemo()
   for (size_t led = 0; led < 128; led++)
   {
     HT.setLedNow(led);
-    delay(5);
+    delay(50);
   } // for led
 
   // Next clear them
@@ -49,6 +49,18 @@ void loopDemo()
   for (size_t led = 0; led < 128; led++)
   {
     HT.clearLedNow(led);
-    delay(5);
+    delay(50);
   } // for led
+
+  // One by one
+  Serial.println("One by one");
+  for (size_t row = 0; row < 2; row++)
+  {
+    for (size_t col = 0; col < 8; col++)
+    {
+      HT.setLedNow(row + col * 16);
+      delay(500);
+      HT.clearLedNow(row + col * 16);
+    }
+  } // for row
 }
