@@ -11,12 +11,14 @@ class Brake
 private:
     static constexpr float MAX_SPEED = 500;        // max speed of primary brake motor
     static constexpr float MAX_ACCELERATION = 200; // max acceleration of primary brake motor
-    static constexpr long STEPS_TO_GO = 500;      // steps to go from open to closed
+    static constexpr long STEPS_TO_GO = 500;       // steps to go from open to closed
 
     AccelStepper stepper;
 
     const Lightgate lightgateOpen;
     const Lightgate lightgateClosed;
+    const long targetPositionOpen;
+    const long targetPositionClosed;
 
 public:
     static constexpr BrakeState BRAKE_STATE_LOCKED = 0;
@@ -24,7 +26,7 @@ public:
     static constexpr BrakeState BRAKE_STATE_UNLOCKED = 3;
     static constexpr BrakeState BRAKE_STATE_ERROR = 2;
 
-    Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4);
+    Brake(const int8_t dir, const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4);
     ~Brake() = default;
 
     BrakeState getBrakeState() const;

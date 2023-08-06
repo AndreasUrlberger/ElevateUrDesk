@@ -15,6 +15,8 @@ private:
     static constexpr char CMD_GET_POSITION = 'p';
     static constexpr char CMD_LOOSEN_BRAKE = 'l';
     static constexpr char CMD_FASTEN_BRAKE = 'f';
+    static constexpr char CMD_TOGGLE_MOTOR_CONTROL = 'c';
+    static constexpr char CMD_TOGGLE_MOTOR_CONTROL_POWER = 't';
 
     const uint8_t addressLeft{};
     const uint8_t addressRight{};
@@ -43,6 +45,8 @@ public:
     void getPosition();
     void loosenBrake();
     void fastenBrake();
+    void toggleMotorControl(const bool enable);
+    void toggleMotorControlPower(const bool enable);
 
     uint32_t getPositionLeft() const { return positionLeft; };
     uint32_t getPositionRight() const { return positionRight; };

@@ -3,7 +3,7 @@
 #include "Brake.hpp"
 #include "Lightgate.hpp"
 
-Brake::Brake(const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4) : lightgateOpen(lightgateOpenPin), lightgateClosed(lightgateClosedPin), stepper(AccelStepper::HALF4WIRE, brakePin1, brakePin3, brakePin2, brakePin4)
+Brake::Brake(const int8_t dir, const uint8_t lightgateOpenPin, const uint8_t lightgateClosedPin, const uint8_t brakePin1, const uint8_t brakePin2, const uint8_t brakePin3, const uint8_t brakePin4) : lightgateOpen(lightgateOpenPin), lightgateClosed(lightgateClosedPin), stepper(AccelStepper::HALF4WIRE, brakePin1, brakePin3, brakePin2, brakePin4), targetPositionOpen(STEPS_TO_GO * dir), targetPositionClosed(-STEPS_TO_GO * dir)
 {
     stepper.setMaxSpeed(MAX_SPEED);
     stepper.setAcceleration(MAX_ACCELERATION);
@@ -34,24 +34,14 @@ BrakeState Brake::getBrakeState() const
 
 void Brake::openBrake()
 {
-#ifdef GEARBOX_LEFT
-    stepper.moveTo(-STEPS_TO_GO);
-#else
-    stepper.moveTo(STEPS_TO_GO);
-#endif
-
+    stepper.moveTo(targetPositionOpen);
     Serial.print("Open Brake, Target position: ");
     Serial.println(stepper.targetPosition());
 }
 
 void Brake::closeBrake()
 {
-#ifdef GEARBOX_LEFT
-    stepper.moveTo(STEPS_TO_GO);
-#else
-    stepper.moveTo(-STEPS_TO_GO);
-#endif
-
+    stepper.moveTo(targetPositionClosed);
     Serial.print("Close Brake, Target position: ");
     Serial.println(stepper.targetPosition());
 }

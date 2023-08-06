@@ -115,8 +115,6 @@ Brake *const Gearbox::getLargeBrake()
 
 void Gearbox::loosenBrakes()
 {
-    // TODO Control the motor relay from the general controller.
-    enableMotorPower();
     smallBrake.openBrake();
     largeBrake.openBrake();
 }
@@ -125,16 +123,28 @@ void Gearbox::fastenBrakes()
 {
     smallBrake.closeBrake();
     largeBrake.closeBrake();
-    disableMotorPower();
-    // TODO Control the motor relay from the general controller.
 }
 
-void Gearbox::enableMotorPower()
+void Gearbox::toggleMotorControlPower(const bool enable)
 {
-    digitalWrite(RELAY_3V, HIGH);
+    if (enable)
+    {
+        digitalWrite(RELAY_3V, HIGH);
+    }
+    else
+    {
+        digitalWrite(RELAY_3V, LOW);
+    }
 }
 
-void Gearbox::disableMotorPower()
+void Gearbox::toggleMotorControl(const bool enable)
 {
-    digitalWrite(RELAY_3V, LOW);
+    if (enable)
+    {
+        digitalWrite(DESK_MOTOR_EN_PIN, LOW);
+    }
+    else
+    {
+        digitalWrite(DESK_MOTOR_EN_PIN, HIGH);
+    }
 }

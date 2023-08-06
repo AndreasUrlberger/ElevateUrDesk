@@ -23,6 +23,8 @@ private:
     static constexpr char CMD_GET_POSITION = 'p';
     static constexpr char CMD_LOOSEN_BRAKE = 'l';
     static constexpr char CMD_FASTEN_BRAKE = 'f';
+    static constexpr char CMD_TOGGLE_MOTOR_CONTROL = 'c';
+    static constexpr char CMD_TOGGLE_MOTOR_CONTROL_POWER = 't';
 
     // I2C settings for communication with general controller.
     static constexpr int I2C_SDA_PIN = 21;
@@ -51,6 +53,8 @@ private:
 
     uint32_t otherGearboxPosition{0u};
 
+    void sendDefaultReturnState();
+
     // Checks if the two gearboxes deviate too far from each other and performs an emergency stop if they do. Returns true if the gearboxes are close enough to each other.bool checkForGearboxDeviation(uint32_t currentPosition)
     bool checkForGearboxDeviation(uint32_t currentPosition);
     uint32_t calculateCorrection(uint32_t deviation);
@@ -61,6 +65,8 @@ private:
     void genCtrlGetPosition();
     void genCtrlLoosenBrake();
     void genCtrlFastenBrake();
+    void genCtrlToggleMotorControl();
+    void genCtrlToggleMotorControlPower();
 
 public:
     void performMoveTo(const long targetPosition);
@@ -69,6 +75,8 @@ public:
     void performEmergencyStop();
     void performLoosenBrake();
     void performFastenBrake();
+    void performToggleMotorControl();
+    void performToggleMotorControlPower();
 
     Communication(float gearboxSensorHeight, float gearboxMathematicalHeight);
     ~Communication() = default;

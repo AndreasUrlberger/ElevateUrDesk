@@ -7,6 +7,12 @@
 #include "Pinout.hpp"
 #include "DeskMotor.hpp"
 
+#ifdef GEARBOX_LEFT
+#define BRAKE_MOVE_DIRECTION -1
+#else
+#define BRAKE_MOVE_DIRECTION 1
+#endif
+
 class Gearbox
 {
     friend class DebugControls;
@@ -26,8 +32,8 @@ private:
 
     DeskMotor deskMotor{maxDeskMotorSpeed, maxDeskMotorAcceleration};
 
-    Brake smallBrake{LIGHTGATE_SMALL_BRAKE_OPEN, LIGHTGATE_SMALL_BRAKE_CLOSED, SMALL_BRAKE_1, SMALL_BRAKE_2, SMALL_BRAKE_3, SMALL_BRAKE_4};
-    Brake largeBrake{LIGHTGATE_LARGE_BRAKE_OPEN, LIGHTGATE_LARGE_BRAKE_CLOSED, LARGE_BRAKE_1, LARGE_BRAKE_2, LARGE_BRAKE_3, LARGE_BRAKE_4};
+    Brake smallBrake{BRAKE_MOVE_DIRECTION, LIGHTGATE_SMALL_BRAKE_OPEN, LIGHTGATE_SMALL_BRAKE_CLOSED, SMALL_BRAKE_1, SMALL_BRAKE_2, SMALL_BRAKE_3, SMALL_BRAKE_4};
+    Brake largeBrake{-BRAKE_MOVE_DIRECTION, LIGHTGATE_LARGE_BRAKE_OPEN, LIGHTGATE_LARGE_BRAKE_CLOSED, LARGE_BRAKE_1, LARGE_BRAKE_2, LARGE_BRAKE_3, LARGE_BRAKE_4};
 
 public:
     Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight);
@@ -49,6 +55,6 @@ public:
     Brake *const getSmallBrake();
     Brake *const getLargeBrake();
 
-    void enableMotorPower();
-    void disableMotorPower();
+    void toggleMotorControl(const bool enable);
+    void toggleMotorControlPower(const bool enable);
 };

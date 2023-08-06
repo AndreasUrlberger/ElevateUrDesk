@@ -55,6 +55,18 @@ void Communication::performFastenBrake()
   gearbox.fastenBrakes();
 }
 
+void Communication::performToggleMotorControl()
+{
+  const bool enable = i2cData[5u] == 1;
+  gearbox.toggleMotorControl(enable);
+}
+
+void Communication::performToggleMotorControlPower()
+{
+  const bool enable = i2cData[5u] == 1;
+  gearbox.toggleMotorControlPower(enable);
+}
+
 bool Communication::checkForGearboxDeviation(uint32_t currentPosition)
 {
   const bool tooHigh = currentPosition > (otherGearboxPosition + MAX_GEARBOX_DEVIATION);
@@ -120,6 +132,12 @@ void Communication::genCtrlOnRequestI2C()
   case CMD_FASTEN_BRAKE:
     genCtrlFastenBrake();
     break;
+  case CMD_TOGGLE_MOTOR_CONTROL:
+    genCtrlToggleMotorControl();
+    break;
+  case CMD_TOGGLE_MOTOR_CONTROL_POWER:
+    genCtrlToggleMotorControlPower();
+    break;
   default:
     Serial.println("Unknown i2c command");
     break;
@@ -155,7 +173,7 @@ void Communication::genCtrlOnRequestI2C()
   // }
 }
 
-void Communication::genCtrlMoveUp()
+void Communication::sendDefaultReturnState()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
@@ -169,6 +187,11 @@ void Communication::genCtrlMoveUp()
   {
     bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
   }
+}
+
+void Communication::genCtrlMoveUp()
+{
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
@@ -211,18 +234,7 @@ void Communication::genCtrlMoveUp()
 
 void Communication::genCtrlMoveDown()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  const uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
@@ -254,18 +266,7 @@ void Communication::genCtrlMoveDown()
 
 void Communication::genCtrlMoveTo()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  const uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
@@ -297,18 +298,7 @@ void Communication::genCtrlMoveTo()
 
 void Communication::genCtrlEmergencyStop()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  const uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   Serial.println("I2C emergencyStop");
   performEmergencyStop();
@@ -316,18 +306,7 @@ void Communication::genCtrlEmergencyStop()
 
 void Communication::genCtrlGetPosition()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  const uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1]), 4u);
@@ -335,18 +314,7 @@ void Communication::genCtrlGetPosition()
 
 void Communication::genCtrlLoosenBrake()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
@@ -355,20 +323,28 @@ void Communication::genCtrlLoosenBrake()
 
 void Communication::genCtrlFastenBrake()
 {
-  constexpr size_t RESPONSE_LENGTH{5u};
-  // Send current position and brake state as response.
-  uint32_t currentPosition = gearbox.getCurrentPosition();
-  uint8_t data[RESPONSE_LENGTH]{0u};
-  memcpy(&(data[0u]), &currentPosition, 4u);
-  data[4u] = gearbox.getCurrentBrakeState();
-
-  size_t bytesWritten{0u};
-  while (bytesWritten < RESPONSE_LENGTH)
-  {
-    bytesWritten += Wire.write(&(data[bytesWritten]), RESPONSE_LENGTH - bytesWritten);
-  }
+  sendDefaultReturnState();
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
   performFastenBrake();
+}
+
+void Communication::genCtrlToggleMotorControl()
+{
+  sendDefaultReturnState();
+
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+  performToggleMotorControl();
+}
+
+void Communication::genCtrlToggleMotorControlPower()
+{
+  sendDefaultReturnState();
+
+  // Get position of other gearbox from i2c data.
+  memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
+
+  performToggleMotorControlPower();
 }
