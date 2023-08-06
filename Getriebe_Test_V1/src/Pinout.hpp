@@ -39,23 +39,34 @@
 // DeskMotor
 #define DESK_MOTOR_CS_PIN 15
 #define DESK_MOTOR_R_SENSE 0.11f
-#define DESK_MOTOR_STEP_PIN 17
+#define DESK_MOTOR_STEP_PIN 16
 #define DESK_MOTOR_DIR_PIN 27
-#define DESK_MOTOR_EN_PIN 16
+#define DESK_MOTOR_EN_PIN 17
 #define DESK_MOTOR_SPI_MOSI 13
 #define DESK_MOTOR_SPI_MISO 12
 #define DESK_MOTOR_SPI_SCK 14
 #define DESK_MOTOR_SPI_SS 15
 
 // Lightgates
+#ifdef GEARBOX_LEFT
+
 #define LIGHTGATE_LARGE_BRAKE_OPEN 36
 #define LIGHTGATE_LARGE_BRAKE_CLOSED 39
 #define LIGHTGATE_SMALL_BRAKE_OPEN 34
 #define LIGHTGATE_SMALL_BRAKE_CLOSED 35
 
+#else
+
+#define LIGHTGATE_LARGE_BRAKE_OPEN 39
+#define LIGHTGATE_LARGE_BRAKE_CLOSED 36
+#define LIGHTGATE_SMALL_BRAKE_OPEN 35
+#define LIGHTGATE_SMALL_BRAKE_CLOSED 34
+
+#endif
+
 // Relay
-#define RELAT_3V -1  // for turning the motor control board on and off
-#define RELAT_24V -1 // only if neccessary and pin is available
+#define RELAY_3V 2   // for turning the motor control board on and off
+#define RELAY_24V -1 // only if neccessary and pin is available
 
 // Rotary Sensor
 #define ROTARY_SDA -1

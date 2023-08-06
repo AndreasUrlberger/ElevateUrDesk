@@ -48,4 +48,7 @@ public:
     DeskMotor *const getDeskMotor();
     Brake *const getSmallBrake();
     Brake *const getLargeBrake();
+
+    void enableMotorPower();
+    void disableMotorPower();
 };

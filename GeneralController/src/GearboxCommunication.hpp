@@ -47,10 +47,5 @@ public:
     uint32_t getPositionLeft() const { return positionLeft; };
     uint32_t getPositionRight() const { return positionRight; };
     uint8_t getBrakeStateLeft() const { return brakeStateLeft; };
-    uint8_t getBrakeStateRight() const
-    {
-        // TODO DEBUGGING ONLY, FIX THIS
-        // return brakeStateRight;
-        return brakeStateLeft;
-    };
+    uint8_t getBrakeStateRight() const { return brakeStateRight; };
 };

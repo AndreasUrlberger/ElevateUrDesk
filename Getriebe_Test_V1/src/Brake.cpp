@@ -34,12 +34,26 @@ BrakeState Brake::getBrakeState() const
 
 void Brake::openBrake()
 {
+#ifdef GEARBOX_LEFT
     stepper.moveTo(-STEPS_TO_GO);
+#else
+    stepper.moveTo(STEPS_TO_GO);
+#endif
+
+    Serial.print("Open Brake, Target position: ");
+    Serial.println(stepper.targetPosition());
 }
 
 void Brake::closeBrake()
 {
+#ifdef GEARBOX_LEFT
     stepper.moveTo(STEPS_TO_GO);
+#else
+    stepper.moveTo(-STEPS_TO_GO);
+#endif
+
+    Serial.print("Close Brake, Target position: ");
+    Serial.println(stepper.targetPosition());
 }
 
 void Brake::step()

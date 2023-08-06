@@ -3,6 +3,7 @@
 
 Gearbox::Gearbox(std::string gearboxName, float sensorHeight, float mathematicalHeight)
 {
+    pinMode(RELAY_3V, OUTPUT);
 }
 
 Gearbox::~Gearbox()
@@ -114,6 +115,8 @@ Brake *const Gearbox::getLargeBrake()
 
 void Gearbox::loosenBrakes()
 {
+    // TODO Control the motor relay from the general controller.
+    enableMotorPower();
     smallBrake.openBrake();
     largeBrake.openBrake();
 }
@@ -122,4 +125,16 @@ void Gearbox::fastenBrakes()
 {
     smallBrake.closeBrake();
     largeBrake.closeBrake();
+    disableMotorPower();
+    // TODO Control the motor relay from the general controller.
+}
+
+void Gearbox::enableMotorPower()
+{
+    digitalWrite(RELAY_3V, HIGH);
+}
+
+void Gearbox::disableMotorPower()
+{
+    digitalWrite(RELAY_3V, LOW);
 }

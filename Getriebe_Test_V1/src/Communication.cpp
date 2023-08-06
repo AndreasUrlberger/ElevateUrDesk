@@ -174,9 +174,14 @@ void Communication::genCtrlMoveUp()
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
 
   // TODO DEBUGGING ONLY
+  static int32_t lastDeviation{0u};
   const int32_t deviation = static_cast<int32_t>(currentPosition) - static_cast<int32_t>(otherGearboxPosition);
-  Serial.print("MoveUp: Deviation is ");
-  Serial.println(deviation);
+  if (lastDeviation != deviation)
+  {
+    Serial.print("MoveUp: Deviation is ");
+    Serial.println(deviation);
+    lastDeviation = deviation;
+  }
 
   // Compare this gearbox's current target position with the other gearbox's current target position.
   // If the deviation is larger than the hard limit, stop the movement.
@@ -249,8 +254,6 @@ void Communication::genCtrlMoveDown()
 
 void Communication::genCtrlMoveTo()
 {
-  Serial.println("I2C moveTo");
-
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
   const uint32_t currentPosition = gearbox.getCurrentPosition();
@@ -271,10 +274,14 @@ void Communication::genCtrlMoveTo()
   memcpy(&targetPosition, &(i2cData[5u]), 4u);
 
   // TODO DEBUGGING ONLY
+  static int32_t lastDeviation{0u};
   const int32_t deviation = static_cast<int32_t>(currentPosition) - static_cast<int32_t>(otherGearboxPosition);
-  Serial.print("MoveTo: Deviation is ");
-  Serial.println(deviation);
-
+  if (lastDeviation != deviation)
+  {
+    Serial.print("MoveTo: Deviation is ");
+    Serial.println(deviation);
+    lastDeviation = deviation;
+  }
   // Check that current position is not too far away from current position of other gearbox.
   // TODO If current position is ahead of other gearbox, try to throttle the movement a bit. (Probably not necessary, just stop if too far away.)
   if ((currentPosition > (otherGearboxPosition + MAX_GEARBOX_DEVIATION)) || (otherGearboxPosition > (currentPosition + MAX_GEARBOX_DEVIATION)))
@@ -343,7 +350,6 @@ void Communication::genCtrlLoosenBrake()
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
-  Serial.println("LoosenBrake");
   performLoosenBrake();
 }
 
@@ -364,6 +370,5 @@ void Communication::genCtrlFastenBrake()
 
   // Get position of other gearbox from i2c data.
   memcpy(&otherGearboxPosition, &(i2cData[1u]), 4u);
-  Serial.println("FastenBrake");
   performFastenBrake();
 }
