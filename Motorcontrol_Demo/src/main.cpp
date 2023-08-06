@@ -5,14 +5,16 @@
 
 #define DESK_MOTOR_CS_PIN 15
 #define DESK_MOTOR_R_SENSE 0.11f
-#define DESK_MOTOR_STEP_PIN 17
+#define DESK_MOTOR_STEP_PIN 16
 #define DESK_MOTOR_DIR_PIN 27
-#define DESK_MOTOR_EN_PIN 16
+#define DESK_MOTOR_EN_PIN 17
 
 #define SPI_MOSI 13
 #define SPI_MISO 12
 #define SPI_SCK 14
 #define SPI_SS 15
+
+#define RELAY_3V 2
 
 #define MICROSTEPS 0
 #define MAX_SPEED 1000
@@ -27,6 +29,9 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Starting up...");
+
+  pinMode(RELAY_3V, OUTPUT);
+  digitalWrite(RELAY_3V, HIGH);
 
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, SPI_SS);
 

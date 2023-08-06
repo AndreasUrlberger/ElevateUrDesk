@@ -12,12 +12,23 @@ void loopDemo();
 
 void setup()
 {
-  setupDemo();
+  // setupDemo();
+  // Prepare pin for output
+  Serial.begin(115200);
+  Serial.println("Prepare pin...");
+  pinMode(2, OUTPUT);
 }
 
 void loop()
 {
-  loopDemo();
+  // loopDemo();
+  // Switch pin on and off every 5 seconds
+  Serial.println("Switching pin 2 on");
+  digitalWrite(2, HIGH);
+  delay(5000);
+  Serial.println("Switching pin 2 off");
+  digitalWrite(2, LOW);
+  delay(5000);
 }
 
 void setupDemo()
