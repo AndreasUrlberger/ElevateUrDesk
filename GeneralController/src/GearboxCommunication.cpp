@@ -204,4 +204,5 @@ void GearboxCommunication::fastenBrake()
     // Right
     // Set last 4 bytes to position of left gearbox
     *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
+    sendCommand(data, DATA_LENGTH, false);
 }
