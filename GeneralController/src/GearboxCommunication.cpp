@@ -218,15 +218,15 @@ void GearboxCommunication::toggleMotorControl(const bool enable)
     // Set first byte to command code
     data[0u] = CMD_TOGGLE_MOTOR_CONTROL;
     // Set second byte to enable/disable
-    data[1u] = enable ? 1u : 0u;
+    data[5u] = enable ? 1u : 0u;
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[2u])) = lastPositionRight;
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
     sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[2u])) = lastPositionLeft;
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
     sendCommand(data, DATA_LENGTH, false);
 }
 
@@ -241,14 +241,14 @@ void GearboxCommunication::toggleMotorControlPower(const bool enable)
     // Set first byte to command code
     data[0u] = CMD_TOGGLE_MOTOR_CONTROL_POWER;
     // Set second byte to enable/disable
-    data[1u] = enable ? 1u : 0u;
+    data[5u] = enable ? 1u : 0u;
 
     // Left
     // Set last 4 bytes to position of right gearbox
-    *reinterpret_cast<uint32_t *>(&(data[2u])) = lastPositionRight;
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
     sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
-    *reinterpret_cast<uint32_t *>(&(data[2u])) = lastPositionLeft;
+    *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
     sendCommand(data, DATA_LENGTH, false);
 }
