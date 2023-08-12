@@ -48,43 +48,17 @@
 #define DESK_MOTOR_SPI_SS 15
 
 // Lightgates
-#ifdef GEARBOX_LEFT
-
-#define LIGHTGATE_LARGE_BRAKE_OPEN 36
-#define LIGHTGATE_LARGE_BRAKE_CLOSED 39
-#define LIGHTGATE_SMALL_BRAKE_OPEN 34
-#define LIGHTGATE_SMALL_BRAKE_CLOSED 35
-
-#else
-
 #define LIGHTGATE_LARGE_BRAKE_OPEN 39
 #define LIGHTGATE_LARGE_BRAKE_CLOSED 36
 #define LIGHTGATE_SMALL_BRAKE_OPEN 35
 #define LIGHTGATE_SMALL_BRAKE_CLOSED 34
 
-#endif
-
 // Relay
-#define RELAY_3V 2   // for turning the motor control board on and off
-#define RELAY_24V -1 // only if neccessary and pin is available
+#define RELAY_3V 2 // for turning the motor control board on and off
 
 // Rotary Sensor
 #define ROTARY_SDA -1
 #define ROTARY_SCL -1
 
-// only for debug purposes
-#define DebugButton1 35
-#define DebugButton2 -1
-
-// other variables
-static bool debugMode = true;
-
 static int minSteps = 0;        // 10000000; // 10 million steps, has to be checked, step 0 is counted from floor height, minSteps starts from the min. achievable position (incl. some buffer)
 static int maxSteps = 40000000; // 40 million steps, has to be checked, steps from bottom to top
-
-static int lastCurrentPosition = minSteps; // last position of the desk before power off, is used to restore the desk position after power on, TODO: actually save it somewhere
-static int currentPosition = minSteps;     // current position of the desk, standard value is minSteps
-
-static int motorTimeout = 50; // 50ms, has to be checked, timeout for motor until it powers off by starting to decelerate
-
-static uint8_t SoftwareVersion[3]{0x01, 0x00, 0x00}; // Major Version, Minor Version, Bugfix

@@ -1,4 +1,11 @@
 #include "InputController.hpp"
+#include "Pinout.hpp"
+
+InputController::InputController(GearboxCommunication *const gearbox, std::queue<InputEvent *> *const eventQueue) : gearbox(gearbox), eventQueue(eventQueue)
+{
+    pinMode(RELAY_24V_PIN, OUTPUT);
+    pinMode(GEARBOX_POWER_RELAY_PIN, OUTPUT);
+}
 
 void InputController::update()
 {
@@ -40,6 +47,9 @@ void InputController::update()
         case UiState::MoveTo:
             Serial.println("MoveTo");
             break;
+        default:
+            Serial.println("Unknown");
+            break;
         }
 
         lastUiState = uiState;
@@ -60,14 +70,20 @@ void InputController::update()
         case GearboxState::UnlockingBrakes:
             Serial.println("UnlockingBrakes");
             break;
-        case GearboxState::UnlockingDriveUp:
-            Serial.println("UnlockingDriveUp");
-            break;
         case GearboxState::Stop:
             Serial.println("Stop");
             break;
         case GearboxState::DriveMode:
             Serial.println("DriveMode");
+            break;
+        case GearboxState::EmergencyStop:
+            Serial.println("EmergencyStop");
+            break;
+        case GearboxState::EmergencyStopRecovery:
+            Serial.println("EmergencyStopRecovery");
+            break;
+        default:
+            Serial.println("Unknown");
             break;
         }
 
@@ -119,6 +135,9 @@ void InputController::update()
         case GearboxCommunication::BRAKE_STATE_INTERMEDIARY:
             Serial.println("BRAKE_STATE_INTERMEDIARY");
             break;
+        case GearboxCommunication::BRAKE_STATE_ERROR:
+            Serial.println("BRAKE_STATE_ERROR");
+            break;
         default:
             Serial.println("Unknown");
             break;
@@ -134,7 +153,7 @@ void InputController::update()
 
 void InputController::updateUiStateMachine()
 {
-    // Process all input event in UI State Machine.
+    // Process all input events in UI State Machine.
     while (!eventQueue->empty())
     {
         InputEvent *const event = eventQueue->front();
@@ -220,66 +239,82 @@ void InputController::updateUiStateMachine()
 
 void InputController::updateGearboxStateMachine()
 {
-    // Update gearbox state machine.
-    // TODO Set enable pin in each state to only enable the motor when the desk is moving or is about to move.
+    // We do not want to enter the emergency stop again if we are currently in the emergency stop recovery state (It is to be expected that the gearbox deviation is too large in this state).
+    if (gearboxState != GearboxState::EmergencyStopRecovery)
+    {
+        // Check for conditions of emergency stop.
+        // Calculate diff between position of gearboxes.
+        const uint32_t gearboxLeftPosition = gearbox->getPositionLeft();
+        const uint32_t gearboxRightPosition = gearbox->getPositionRight();
+        const int32_t diff = static_cast<int32_t>(gearboxLeftPosition) - static_cast<int32_t>(gearboxRightPosition);
+        if (abs(diff) > MAX_GEARBOX_DEVIATION)
+        {
+            gearboxState = GearboxState::EmergencyStop;
+        }
+    }
+
+    // Check what state transition to make.
     switch (gearboxState)
     {
     case GearboxState::OnBrake:
-        gearboxOnBrake();
+        checkTransitionOnBrake();
         break;
     case GearboxState::LockingBrakes:
-        gearboxLockingBrakes();
+        checkTransitionLockingBrakes();
         break;
     case GearboxState::UnlockingBrakes:
-        gearboxUnlockingBrakes();
-        break;
-    case GearboxState::UnlockingDriveUp:
-        gearboxUnlockingDriveUp();
+        checkTransitionUnlockingBrakes();
         break;
     case GearboxState::DriveMode:
-        gearboxDriveMode();
+        checkTransitionDriveMode();
         break;
     case GearboxState::Stop:
-        gearboxStop();
+        checkTransitionStop();
+        break;
+    case GearboxState::EmergencyStop:
+        checkTransitionEmergencyStop();
+        break;
+    case GearboxState::EmergencyStopRecovery:
+        checkTransitionEmergencyStopRecovery();
+        break;
+    default:
+        throw std::runtime_error("Unknown gearbox state to transition from");
         break;
     }
 
-    // Check state of gearbox for things like exmergen
-    // Calculate diff between position of gearboxes.
-    const uint32_t gearboxLeftPosition = gearbox->getPositionLeft();
-    const uint32_t gearboxRightPosition = gearbox->getPositionRight();
-    const int32_t diff = static_cast<int32_t>(gearboxLeftPosition) - static_cast<int32_t>(gearboxRightPosition);
-    if (abs(diff) > MAX_GEARBOX_DEVIATION)
-    {
-        // Emergency stop.
-        gearbox->emergencyStop();
-        // TODO Not perfect.
-        // TODO Maybe check if the gearbox is in an emergency state whenever it shall drive. Maybe also add an emergency stop UI State.
-        gearboxState = GearboxState::LockingBrakes;
-        return;
-    }
-
-    // Perform gearbox state.
+    // Execute current state.
     switch (gearboxState)
     {
-    case GearboxState::UnlockingBrakes:
-        gearbox->loosenBrake();
-        break;
-    case GearboxState::UnlockingDriveUp:
-        performUnlockingDriveUp();
+    case GearboxState::OnBrake:
+        performOnBrake();
         break;
     case GearboxState::LockingBrakes:
-        gearbox->fastenBrake();
+        performLockingBrakes();
+        break;
+    case GearboxState::UnlockingBrakes:
+        performUnlockingBrakes();
         break;
     case GearboxState::DriveMode:
         performDriveMode();
         break;
-    case GearboxState::OnBrake:
-        gearbox->getPosition();
+    case GearboxState::Stop:
+        performStop();
+        break;
+    case GearboxState::EmergencyStop:
+        performEmergencyStop();
+        break;
+    case GearboxState::EmergencyStopRecovery:
+        performEmergencyStopRecovery();
         break;
     default:
+        throw std::runtime_error("Unknown gearbox state to execute");
         break;
     }
+}
+
+bool InputController::isInMovingUiState()
+{
+    return (uiState == UiState::MoveUp || uiState == UiState::MoveDown || uiState == UiState::MoveTo || uiState == UiState::DriveControl);
 }
 
 #pragma region UI Methods
@@ -386,129 +421,510 @@ void InputController::moveTo(InputEvent *const event)
 #pragma endregion UI Methods
 
 #pragma region Gearbox Methods
-void InputController::gearboxOnBrake()
+void InputController::checkTransitionOnBrake()
 {
-    const bool isInMovingState = uiState == UiState::MoveUp || uiState == UiState::MoveDown || uiState == UiState::MoveTo || uiState == UiState::DriveControl;
-    if (isInMovingState)
+    // If in moving ui state, unlock brakes.
+    if (isInMovingUiState())
     {
-        // Unlock brakes.
         gearboxState = GearboxState::UnlockingBrakes;
+        // Important to reset for first run of sub state machine, otherwise, the wait time of the first state will be skipped.
+        lastUnlockTransition = millis();
     }
 }
 
-void InputController::gearboxLockingBrakes()
+void InputController::checkTransitionUnlockingBrakes()
 {
-    const bool isInMovingState = uiState == UiState::MoveUp || uiState == UiState::MoveDown || uiState == UiState::MoveTo || uiState == UiState::DriveControl;
-    if (isInMovingState)
+    // This transition is same for all.
+    // If not in moving ui state, stop.
+    if (!isInMovingUiState())
     {
-        // Unlock brakes.
-        gearboxState = GearboxState::UnlockingBrakes;
+        gearboxState = GearboxState::Stop;
+        // Reset unlockingBrakeState.
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
         return;
     }
 
-    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_LOCKED)
+    // DEBUG ONLY
+    static UnlockingBrakeState lastUnlockingBrakeState = UnlockingBrakeState::UnlockDriveUp;
+
+    if (lastUnlockingBrakeState != unlockingBrakeState)
     {
+        Serial.print("UnlockingBrakeState: ");
+        switch (unlockingBrakeState)
+        {
+        case UnlockingBrakeState::SwitchOnGearboxPower:
+            Serial.println("SwitchOnGearboxPower");
+            break;
+        case UnlockingBrakeState::SwitchOnMotorPowerSupply:
+            Serial.println("SwitchOnMotorPowerSupply");
+            break;
+        case UnlockingBrakeState::SwitchOnMotorControlPower:
+            Serial.println("SwitchOnMotorControlPower");
+            break;
+        case UnlockingBrakeState::SwitchOnMotorControl:
+            Serial.println("SwitchOnMotorControl");
+            break;
+        case UnlockingBrakeState::UnlockBrakes:
+            Serial.println("UnlockBrakes");
+            break;
+        case UnlockingBrakeState::UnlockDriveUp:
+            Serial.println("UnlockDriveUp");
+            break;
+        default:
+            Serial.println("Unknown");
+            break;
+        }
+        lastUnlockingBrakeState = unlockingBrakeState;
+    }
+    // Check state transition for sub state machine.
+    switch (unlockingBrakeState)
+    {
+    case UnlockingBrakeState::SwitchOnGearboxPower:
+        checkTransitionSwitchOnGearboxPower();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorPowerSupply:
+        checkTransitionSwitchOnMotorPowerSupply();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorControlPower:
+        checkTransitionSwitchOnMotorControlPower();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorControl:
+        checkTransitionSwitchOnMotorControl();
+        break;
+    case UnlockingBrakeState::UnlockBrakes:
+        checkTransitionUnlockBrakes();
+        break;
+    case UnlockingBrakeState::UnlockDriveUp:
+        checkTransitionUnlockDriveUp();
+        break;
+    default:
+        throw std::runtime_error("Unknown unlockingBrakeState to transition from");
+        break;
+    }
+}
+
+#pragma region UnlockingBrakes Transitions
+void InputController::checkTransitionSwitchOnGearboxPower()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastUnlockTransition >= SWITCH_ON_GEARBOX_POWER_TIME)
+    {
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnMotorPowerSupply;
+        lastUnlockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOnMotorPowerSupply()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastUnlockTransition >= SWITCH_ON_MOTOR_POWER_SUPPLY_TIME)
+    {
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnMotorControlPower;
+        lastUnlockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOnMotorControlPower()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastUnlockTransition >= SWITCH_ON_MOTOR_CONTROL_POWER_TIME)
+    {
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnMotorControl;
+        lastUnlockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOnMotorControl()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastUnlockTransition >= SWITCH_ON_MOTOR_CONTROL_TIME)
+    {
+        unlockingBrakeState = UnlockingBrakeState::UnlockBrakes;
+        lastUnlockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionUnlockBrakes()
+{
+    // Check if both brakes are unlocked.
+    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
+    {
+        // Brakes are unlocked, switch to drive mode state
+        gearboxState = GearboxState::DriveMode;
+        // Reset unlockingBrakeState for next time.
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
+        return;
+    }
+
+    // Check if max time for brake unlocking is reached, then switch to drive up state.
+    // TODO Does it make sense to also switch to drive up once one brake is unlocked but the other not?
+    const uint32_t currentTime = millis();
+    if (currentTime - lastUnlockTransition >= MAX_BRAKE_UNLOCKING_TIME)
+    {
+        unlockingBrakeState = UnlockingBrakeState::UnlockDriveUp;
+        isFirstRunDriveUp = true;
+        lastUnlockTransition = currentTime;
+        return;
+    }
+}
+
+void InputController::checkTransitionUnlockDriveUp()
+{
+    // Check if both brakes are unlocked.
+    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
+    {
+        // Brakes are unlocked, switch to drive mode state
+        gearboxState = GearboxState::DriveMode;
+        // Reset unlockingBrakeState for next time.
+        unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
+        return;
+    }
+}
+#pragma endregion UnlockingBrakes Transitions
+
+void InputController::checkTransitionLockingBrakes()
+{
+    // This transition is same for all.
+    // If in moving ui state, unlock brakes.
+    if (isInMovingUiState())
+    {
+        gearboxState = GearboxState::UnlockingBrakes;
+        // Important to reset for first run of sub state machine, otherwise, the wait time of the first state will be skipped.
+        lastUnlockTransition = millis();
+        // Reset lockingBrakeState.
+        lockingBrakeState = LockingBrakeState::LockBrakes;
+        return;
+    }
+
+    static LockingBrakeState lastLockingBrakeState = LockingBrakeState::SwitchOffGearboxPower;
+
+    if (lastLockingBrakeState != lockingBrakeState)
+    {
+        Serial.print("LockingBrakeState: ");
+        switch (lockingBrakeState)
+        {
+        case LockingBrakeState::LockBrakes:
+            Serial.println("LockBrakes");
+            break;
+        case LockingBrakeState::SwitchOffMotorControl:
+            Serial.println("SwitchOffMotorControl");
+            break;
+        case LockingBrakeState::SwitchOffMotorControlPower:
+            Serial.println("SwitchOffMotorControlPower");
+            break;
+        case LockingBrakeState::SwitchOffMotorPowerSupply:
+            Serial.println("SwitchOffMotorPowerSupply");
+            break;
+        case LockingBrakeState::SwitchOffGearboxPower:
+            Serial.println("SwitchOffGearboxPower");
+            break;
+        default:
+            Serial.println("Unknown");
+            break;
+        }
+        lastLockingBrakeState = lockingBrakeState;
+    }
+
+    // Check state transition for sub state machine.
+    switch (lockingBrakeState)
+    {
+    case LockingBrakeState::LockBrakes:
+        checkTransitionLockBrakes();
+        break;
+    case LockingBrakeState::SwitchOffMotorControl:
+        checkTransitionSwitchOffMotorControl();
+        break;
+    case LockingBrakeState::SwitchOffMotorControlPower:
+        checkTransitionSwitchOffMotorControlPower();
+        break;
+    case LockingBrakeState::SwitchOffMotorPowerSupply:
+        checkTransitionSwitchOffMotorPowerSupply();
+        break;
+    case LockingBrakeState::SwitchOffGearboxPower:
+        checkTransitionSwitchOffGearboxPower();
+        break;
+    default:
+        throw std::runtime_error("Unknown lockingBrakeState to transition from");
+        break;
+    }
+}
+
+#pragma region LockingBrakes Transitions
+void InputController::checkTransitionLockBrakes()
+{
+    // Switch to next state if both brakes are locked, or the max time for locking is reached.
+    const uint32_t currentTime = millis();
+    if ((gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_LOCKED) || (currentTime - lastLockTransition >= MAX_BRAKE_LOCKING_TIME))
+    {
+        lockingBrakeState = LockingBrakeState::SwitchOffMotorControl;
+        lastLockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOffMotorControl()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastLockTransition >= SWITCH_OFF_MOTOR_CONTROL_TIME)
+    {
+        lockingBrakeState = LockingBrakeState::SwitchOffMotorControlPower;
+        lastLockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOffMotorControlPower()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastLockTransition >= SWITCH_OFF_MOTOR_CONTROL_POWER_TIME)
+    {
+        lockingBrakeState = LockingBrakeState::SwitchOffMotorPowerSupply;
+        lastLockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOffMotorPowerSupply()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastLockTransition >= SWITCH_OFF_MOTOR_POWER_SUPPLY_TIME)
+    {
+        lockingBrakeState = LockingBrakeState::SwitchOffGearboxPower;
+        lastLockTransition = currentTime;
+    }
+}
+
+void InputController::checkTransitionSwitchOffGearboxPower()
+{
+    const uint32_t currentTime = millis();
+    // If given time has passed, switch to next state
+    if (currentTime - lastLockTransition >= SWITCH_OFF_GEARBOX_POWER_TIME)
+    {
+        lockingBrakeState = LockingBrakeState::LockBrakes;
         gearboxState = GearboxState::OnBrake;
+        lastLockTransition = currentTime;
     }
 }
+#pragma endregion LockingBrakes Transitions
 
-void InputController::gearboxUnlockingBrakes()
+void InputController::checkTransitionStop()
 {
-    const bool isInStationaryState = uiState == UiState::Idle;
-    if (isInStationaryState)
-    {
-        // Lock brakes.
-        gearboxState = GearboxState::LockingBrakes;
-        return;
-    }
-
-    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
-    {
-        gearboxState = GearboxState::DriveMode;
-    }
-    else if (gearbox->getBrakeStateLeft() != GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() != GearboxCommunication::BRAKE_STATE_LOCKED)
-    {
-        gearboxState = GearboxState::UnlockingDriveUp;
-    }
-}
-
-void InputController::gearboxDriveMode()
-{
-    const bool isInStationaryState = uiState == UiState::Idle;
-    if (isInStationaryState)
-    {
-        gearboxState = GearboxState::Stop;
-    }
-}
-
-void InputController::gearboxUnlockingDriveUp()
-{
-    // Handle change in UI state.
-    const bool isInStationaryState = uiState == UiState::Idle;
-    if (isInStationaryState)
-    {
-        // Lock brakes.
-        gearboxState = GearboxState::Stop;
-        return;
-    }
-
-    // Check if brakes are unlocked.
-    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
-    {
-        gearboxState = GearboxState::DriveMode;
-    }
-}
-
-void InputController::gearboxStop()
-{
-    // Handle change in UI state.
-    if (uiState == UiState::MoveUp || uiState == UiState::MoveDown || uiState == UiState::MoveTo)
-    {
-        gearboxState = GearboxState::UnlockingBrakes;
-        return;
-    }
-
+    // Lock brakes when there is no movement.
     if (lastPositionLeft == gearbox->getPositionLeft() && lastPositionRight == gearbox->getPositionRight())
     {
-        // No change in position -> No movement -> Lock brakes.
         gearboxState = GearboxState::LockingBrakes;
+        // Important to reset for first run of sub state machine, otherwise, the wait time of the first state will be skipped.
+        lastLockTransition = millis();
     }
 }
 
-void InputController::performUnlockingDriveUp()
+void InputController::checkTransitionDriveMode()
 {
-    if (firstRun)
+    // If not in any of the moving state, stop.
+    if (!isInMovingUiState())
     {
-        firstRun = false;
-        startPosition = max(gearbox->getPositionLeft(), gearbox->getPositionRight());
-        targetPosition = startPosition + UNLOCKING_DRIVE_UP_DISTANCE;
+        gearboxState = GearboxState::Stop;
     }
+}
 
-    gearbox->driveTo(targetPosition);
-
-    // Check if target position is reached.
-    if (gearbox->getPositionLeft() >= targetPosition && gearbox->getPositionRight() >= targetPosition)
+void InputController::checkTransitionEmergencyStop()
+{
+    // Transition to recovery state if there is no movement anymore.
+    if (lastPositionLeft == gearbox->getPositionLeft() && lastPositionRight == gearbox->getPositionRight())
     {
-        // Target position is reached and brakes are still locked, drive up again.
-        targetPosition = targetPosition + UNLOCKING_DRIVE_UP_DISTANCE;
+        gearboxState = GearboxState::EmergencyStopRecovery;
+        // Need to reset recovery target position for a new value to get set.
+        emergencyStopRecoverPosition = UINT32_MAX;
     }
+}
+
+void InputController::checkTransitionEmergencyStopRecovery()
+{
+    // Transition to drive mode state if the gearboxes are close enough to each other again.
+    if (abs(static_cast<int32_t>(gearbox->getPositionLeft()) - static_cast<int32_t>(gearbox->getPositionRight())) <= MAX_DEVIATION_STOP_RECOVERY)
+    {
+        gearboxState = GearboxState::DriveMode;
+    }
+}
+
+void InputController::performOnBrake()
+{
+    // Nothing to do, this state just waits for any events.
+    gearbox->getPosition();
+}
+
+void InputController::performLockingBrakes()
+{
+    // Call according function to current lock state machine.
+    switch (lockingBrakeState)
+    {
+    case LockingBrakeState::LockBrakes:
+        performLockBrakes();
+        break;
+    case LockingBrakeState::SwitchOffMotorControl:
+        performSwitchOffMotorControl();
+        break;
+    case LockingBrakeState::SwitchOffMotorControlPower:
+        performSwitchOffMotorControlPower();
+        break;
+    case LockingBrakeState::SwitchOffMotorPowerSupply:
+        performSwitchOffMotorPowerSupply();
+        break;
+    case LockingBrakeState::SwitchOffGearboxPower:
+        performSwitchOffGearboxPower();
+        break;
+    default:
+        throw std::runtime_error("Unknown lockingBrakeState to execute");
+        break;
+    }
+}
+
+void InputController::performUnlockingBrakes()
+{
+    // Call according function to current unlock state machine.
+    switch (unlockingBrakeState)
+    {
+    case UnlockingBrakeState::SwitchOnGearboxPower:
+        performSwitchOnGearboxPower();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorPowerSupply:
+        performSwitchOnMotorPowerSupply();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorControlPower:
+        performSwitchOnMotorControlPower();
+        break;
+    case UnlockingBrakeState::SwitchOnMotorControl:
+        performSwitchOnMotorControl();
+        break;
+    case UnlockingBrakeState::UnlockBrakes:
+        performUnlockBrakes();
+        break;
+    case UnlockingBrakeState::UnlockDriveUp:
+        performUnlockDriveUp();
+        break;
+    default:
+        throw std::runtime_error("Unknown unlockingBrakeState to execute");
+        break;
+    }
+}
+
+void InputController::performStop()
+{
+    // We do nothing in this state, we wait for the gearboxes to stop, they will not get any new commands.
+    gearbox->getPosition();
 }
 
 void InputController::performDriveMode()
 {
-    if (uiState == UiState::MoveUp)
+    // Depending on the UI State we either drive up, down, to or not at all.
+    switch (uiState)
     {
+    case UiState::MoveUp:
         gearbox->driveUp();
-    }
-
-    if (uiState == UiState::MoveDown)
-    {
+        break;
+    case UiState::MoveDown:
         gearbox->driveDown();
-    }
-
-    if (uiState == UiState::MoveTo)
-    {
-        gearbox->driveTo(40000);
+        break;
+    case UiState::MoveTo:
+        gearbox->driveTo(40000u);
+        break;
+    default:
+        gearbox->getPosition();
+        break;
     }
 }
-#pragma endregion Gearbox Methods
+
+void InputController::performEmergencyStop()
+{
+    gearbox->emergencyStop();
+}
+
+void InputController::performEmergencyStopRecovery()
+{
+    if (emergencyStopRecoverPosition == UINT32_MAX)
+    {
+        // First run.
+        // Use the middle of the two gearboxes as target position.
+        emergencyStopRecoverPosition = gearbox->getPositionLeft() / 2 + gearbox->getPositionRight() / 2;
+    }
+
+    gearbox->driveTo(emergencyStopRecoverPosition);
+}
+
+void InputController::performSwitchOnGearboxPower()
+{
+    digitalWrite(GEARBOX_POWER_RELAY_PIN, HIGH);
+    gearbox->getPosition();
+}
+
+void InputController::performSwitchOnMotorPowerSupply()
+{
+    digitalWrite(RELAY_24V_PIN, HIGH);
+    gearbox->getPosition();
+}
+
+void InputController::performSwitchOnMotorControlPower()
+{
+    gearbox->toggleMotorControlPower(true);
+}
+
+void InputController::performSwitchOnMotorControl()
+{
+    gearbox->toggleMotorControl(true);
+}
+
+void InputController::performUnlockBrakes()
+{
+    gearbox->loosenBrake();
+}
+
+void InputController::performUnlockDriveUp()
+{
+    if (isFirstRunDriveUp)
+    {
+        isFirstRunDriveUp = false;
+        startPositionDriveUp = max(gearbox->getPositionLeft(), gearbox->getPositionRight());
+        targetPositionDriveUp = startPositionDriveUp + UNLOCKING_DRIVE_UP_DISTANCE;
+    }
+
+    gearbox->driveTo(targetPositionDriveUp);
+
+    // Check if target position is reached.
+    if (gearbox->getPositionLeft() >= targetPositionDriveUp && gearbox->getPositionRight() >= targetPositionDriveUp)
+    {
+        // Target position is reached and brakes are still locked, drive up again.
+        targetPositionDriveUp = targetPositionDriveUp + UNLOCKING_DRIVE_UP_DISTANCE;
+    }
+}
+
+void InputController::performLockBrakes()
+{
+    gearbox->fastenBrake();
+}
+
+void InputController::performSwitchOffMotorControl()
+{
+    gearbox->toggleMotorControl(false);
+}
+
+void InputController::performSwitchOffMotorControlPower()
+{
+    gearbox->toggleMotorControlPower(false);
+}
+
+void InputController::performSwitchOffMotorPowerSupply()
+{
+    digitalWrite(RELAY_24V_PIN, LOW);
+    gearbox->getPosition();
+}
+
+void InputController::performSwitchOffGearboxPower()
+{
+    digitalWrite(GEARBOX_POWER_RELAY_PIN, LOW);
+    gearbox->getPosition();
+}
+#pragma endregion Gearbox Machine

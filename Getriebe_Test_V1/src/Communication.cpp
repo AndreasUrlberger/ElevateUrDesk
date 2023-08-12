@@ -58,12 +58,16 @@ void Communication::performFastenBrake()
 void Communication::performToggleMotorControl()
 {
   const bool enable = i2cData[5u] == 1;
+  Serial.print("Toggle motor control: ");
+  Serial.println(enable ? "true" : "false");
   gearbox.toggleMotorControl(enable);
 }
 
 void Communication::performToggleMotorControlPower()
 {
   const bool enable = i2cData[5u] == 1;
+  Serial.print("Toggle motor control power: ");
+  Serial.println(enable ? "true" : "false");
   gearbox.toggleMotorControlPower(enable);
 }
 
@@ -177,7 +181,7 @@ void Communication::sendDefaultReturnState()
 {
   constexpr size_t RESPONSE_LENGTH{5u};
   // Send current position and brake state as response.
-  const uint32_t currentPosition = gearbox.getCurrentPosition();
+  currentPosition = gearbox.getCurrentPosition();
   uint8_t data[RESPONSE_LENGTH]{0u};
   memcpy(&(data[0u]), &currentPosition, 4u);
   data[4u] = gearbox.getCurrentBrakeState();

@@ -41,6 +41,7 @@ private:
     static constexpr uint32_t MAX_GEARBOX_DEVIATION = 1000u;
     static constexpr uint32_t MAX_SOFT_GEARBOX_DEVIATION = 400u;
 
+    uint32_t currentPosition{0u};
     Gearbox gearbox;
     std::string controlPanelMsgBuffer = "";
     uint8_t expectedMsgLength = 0;

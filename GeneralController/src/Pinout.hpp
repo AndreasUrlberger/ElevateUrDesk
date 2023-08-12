@@ -1,0 +1,2 @@
+#define GEARBOX_POWER_RELAY_PIN 32
+#define RELAY_24V_PIN 33

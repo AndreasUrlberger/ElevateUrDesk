@@ -38,10 +38,6 @@ void setup()
   // Initialize start time
   start = std::chrono::steady_clock::now();
   target = start;
-
-  // DEBUGGING
-  // init output pin
-  pinMode(23, OUTPUT);
 }
 
 void loop()
@@ -52,7 +48,6 @@ void loop()
   // Read all messages from the control panel.
   while (controlPanelCommunication.update())
   {
-
   }
 
   inputController.update();
