@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-08-12T07:29:35.563Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.200" etag="WVm4R3mf7QnkR3boCXEi" version="21.6.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-12T07:31:22.070Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.200" etag="xg8WIMNiG9hnXAhhyQID" version="21.6.8" type="github">
   <diagram name="Page-1" id="58cdce13-f638-feb5-8d6f-7d28b1aa9fa0">
     <mxGraphModel dx="3126" dy="1998" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
@@ -344,7 +344,7 @@
         <mxCell id="AU6W5NaQmW_jm-44bBxI-86" value="" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;rounded=1;shadow=0;comic=0;labelBackgroundColor=none;fontFamily=Verdana;fontSize=12;fontColor=#000000;align=center;" parent="AU6W5NaQmW_jm-44bBxI-63" vertex="1">
           <mxGeometry x="450" y="435" width="30" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="HKwo1jRQU1uy_2isMQ57-6" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="HKwo1jRQU1uy_2isMQ57-1" target="AU6W5NaQmW_jm-44bBxI-1">
+        <mxCell id="HKwo1jRQU1uy_2isMQ57-6" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="HKwo1jRQU1uy_2isMQ57-9" target="AU6W5NaQmW_jm-44bBxI-1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="HKwo1jRQU1uy_2isMQ57-8" value="Gearboxes are close &lt;br&gt;enough to each other" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Verdana;fontColor=default;" vertex="1" connectable="0" parent="HKwo1jRQU1uy_2isMQ57-6">
@@ -353,13 +353,22 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="HKwo1jRQU1uy_2isMQ57-1" value="Emergency&lt;br&gt;Stop" style="rounded=1;whiteSpace=wrap;html=1;arcSize=24;fillColor=#ffffc0;strokeColor=#ff0000;shadow=0;comic=0;labelBackgroundColor=none;fontFamily=Verdana;fontSize=12;fontColor=#000000;align=center;" vertex="1" parent="1">
-          <mxGeometry x="420" y="280" width="120" height="60" as="geometry" />
+          <mxGeometry x="420" y="190" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="HKwo1jRQU1uy_2isMQ57-4" value="If gearboxes are &lt;br&gt;too far apart&lt;br&gt;(Can occur in any state)" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;" edge="1" parent="1" source="HKwo1jRQU1uy_2isMQ57-2" target="HKwo1jRQU1uy_2isMQ57-1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="HKwo1jRQU1uy_2isMQ57-2" value="d" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;rounded=1;shadow=0;comic=0;labelBackgroundColor=none;fontFamily=Verdana;fontSize=12;fontColor=#000000;align=center;direction=south;" vertex="1" parent="1">
-          <mxGeometry x="465" y="170" width="30" height="30" as="geometry" />
+          <mxGeometry x="465" y="80" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HKwo1jRQU1uy_2isMQ57-10" value="Both gearboxes stopped" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="HKwo1jRQU1uy_2isMQ57-1" target="HKwo1jRQU1uy_2isMQ57-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="250" as="sourcePoint" />
+            <mxPoint x="560" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HKwo1jRQU1uy_2isMQ57-9" value="Emergency&lt;br&gt;Stop Recover" style="rounded=1;whiteSpace=wrap;html=1;arcSize=24;fillColor=#ffffc0;strokeColor=#ff0000;shadow=0;comic=0;labelBackgroundColor=none;fontFamily=Verdana;fontSize=12;fontColor=#000000;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="350" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
