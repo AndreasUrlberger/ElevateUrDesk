@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-08-12T07:31:22.070Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.200" etag="xg8WIMNiG9hnXAhhyQID" version="21.6.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-12T09:41:39.512Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.200" etag="3wnrYFAeJCCsAVZZT3OB" version="21.6.8" type="github">
   <diagram name="Page-1" id="58cdce13-f638-feb5-8d6f-7d28b1aa9fa0">
     <mxGraphModel dx="3126" dy="1998" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
@@ -28,7 +28,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AU6W5NaQmW_jm-44bBxI-102" value="UI State: &lt;br&gt;Drive Control" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;" parent="1" source="382b91b5511bd0f7-10" target="AU6W5NaQmW_jm-44bBxI-63" edge="1">
+        <mxCell id="AU6W5NaQmW_jm-44bBxI-102" value="UI State: &lt;br&gt;Moving" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;jumpStyle=arc;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;" parent="1" source="382b91b5511bd0f7-10" target="AU6W5NaQmW_jm-44bBxI-63" edge="1">
           <mxGeometry x="-0.7551" relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="400" y="865" />
@@ -49,7 +49,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AU6W5NaQmW_jm-44bBxI-12" value="UI State: &lt;br&gt;Other" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;jumpStyle=arc;" parent="1" source="AU6W5NaQmW_jm-44bBxI-1" target="382b91b5511bd0f7-5" edge="1">
+        <mxCell id="AU6W5NaQmW_jm-44bBxI-12" value="UI State: &lt;br&gt;Not Moving" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;labelBackgroundColor=none;strokeColor=#ff0000;fontFamily=Verdana;fontSize=12;fontColor=default;endArrow=open;endSize=8;jumpStyle=arc;" parent="1" source="AU6W5NaQmW_jm-44bBxI-1" target="382b91b5511bd0f7-5" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="AU6W5NaQmW_jm-44bBxI-1" value="Drive Mode" style="rounded=1;whiteSpace=wrap;html=1;arcSize=24;fillColor=#ffffc0;strokeColor=#ff0000;shadow=0;comic=0;labelBackgroundColor=none;fontFamily=Verdana;fontSize=12;fontColor=#000000;align=center;" parent="1" vertex="1">
@@ -177,7 +177,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AU6W5NaQmW_jm-44bBxI-101" value="UI State:&lt;br style=&quot;border-color: var(--border-color); background-color: rgb(251, 251, 251);&quot;&gt;&lt;span style=&quot;background-color: rgb(251, 251, 251);&quot;&gt;Drive Control&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Verdana;fontColor=default;" parent="AU6W5NaQmW_jm-44bBxI-62" vertex="1" connectable="0">
+        <mxCell id="AU6W5NaQmW_jm-44bBxI-101" value="UI State:&lt;br style=&quot;border-color: var(--border-color); background-color: rgb(251, 251, 251);&quot;&gt;&lt;span style=&quot;background-color: rgb(251, 251, 251);&quot;&gt;Moving&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Verdana;fontColor=default;" parent="AU6W5NaQmW_jm-44bBxI-62" vertex="1" connectable="0">
           <mxGeometry x="0.8119" y="4" relative="1" as="geometry">
             <mxPoint x="7" y="-4" as="offset" />
           </mxGeometry>
@@ -322,7 +322,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AU6W5NaQmW_jm-44bBxI-100" value="UI State:&lt;br&gt;Other" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Verdana;fontColor=default;labelBackgroundColor=none;" parent="AU6W5NaQmW_jm-44bBxI-99" vertex="1" connectable="0">
+        <mxCell id="AU6W5NaQmW_jm-44bBxI-100" value="UI State:&lt;br&gt;Not Moving" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Verdana;fontColor=default;labelBackgroundColor=none;" parent="AU6W5NaQmW_jm-44bBxI-99" vertex="1" connectable="0">
           <mxGeometry x="0.7912" y="2" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
