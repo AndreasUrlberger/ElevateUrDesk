@@ -4,7 +4,6 @@
 MotorTimer *MotorTimer::instance;
 hw_timer_t *MotorTimer::timerHandle;
 DeskMotor *MotorTimer::deskMotor;
-Brake *MotorTimer::brake1;
 Brake *MotorTimer::brake2;
 
 void IRAM_ATTR onMotorTimer()
@@ -12,13 +11,12 @@ void IRAM_ATTR onMotorTimer()
     MotorTimer::instance->dueTaskIterations.fetch_add(1);
 }
 
-MotorTimer::MotorTimer(DeskMotor *const deskMotor, Brake *const brake1, Brake *const brake2)
+MotorTimer::MotorTimer(DeskMotor *const deskMotor, Brake *const brake2)
 {
     instance = this;
     dueTaskIterations.store(0);
 
     this->deskMotor = deskMotor;
-    this->brake1 = brake1;
     this->brake2 = brake2;
 
     startTimer();
@@ -39,7 +37,6 @@ void MotorTimer::runTask()
         {
             dueTaskIterations.fetch_sub(1);
             deskMotor->step();
-            brake1->step();
             brake2->step();
         }
     }

@@ -32,7 +32,6 @@ private:
 
     DeskMotor deskMotor{maxDeskMotorSpeed, maxDeskMotorAcceleration};
 
-    Brake smallBrake{BRAKE_MOVE_DIRECTION, LIGHTGATE_SMALL_BRAKE_OPEN, LIGHTGATE_SMALL_BRAKE_CLOSED, SMALL_BRAKE_1, SMALL_BRAKE_2, SMALL_BRAKE_3, SMALL_BRAKE_4};
     Brake largeBrake{-BRAKE_MOVE_DIRECTION, LIGHTGATE_LARGE_BRAKE_OPEN, LIGHTGATE_LARGE_BRAKE_CLOSED, LARGE_BRAKE_1, LARGE_BRAKE_2, LARGE_BRAKE_3, LARGE_BRAKE_4};
 
 public:
@@ -52,7 +51,6 @@ public:
     BrakeState getCurrentBrakeState() const;
 
     DeskMotor *const getDeskMotor();
-    Brake *const getSmallBrake();
     Brake *const getLargeBrake();
 
     void toggleMotorControl(const bool enable);

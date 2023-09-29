@@ -15,7 +15,7 @@ static constexpr float gearboxSensorHeight = 0.0f;
 static constexpr float gearboxMathematicalHeight = 0.0f;
 
 Communication communication{gearboxSensorHeight, gearboxMathematicalHeight};
-MotorTimer motorTimer{communication.getGearbox()->getDeskMotor(), communication.getGearbox()->getSmallBrake(), communication.getGearbox()->getLargeBrake()};
+MotorTimer motorTimer{communication.getGearbox()->getDeskMotor(), communication.getGearbox()->getLargeBrake()};
 
 void setup()
 {
@@ -38,45 +38,4 @@ void setup()
 
 void loop()
 {
-  // Read lightgate sensors.
-  // bool largeBrakeIsOpen = digitalRead(LIGHTGATE_LARGE_BRAKE_OPEN);
-  // bool largeBrakeIsClosed = digitalRead(LIGHTGATE_LARGE_BRAKE_CLOSED);
-
-  // Serial.print("Large brake open: ");
-  // Serial.print(largeBrakeIsOpen ? "true" : "false");
-  // Serial.print(" | Large brake closed: ");
-  // Serial.println(largeBrakeIsClosed ? "true" : "false");
-}
-
-void makeReadyToDrive()
-{
-  // Enable Motor (enable Relay)
-  // Enable Motor Control (enable Relay)
-  // Enable Motor via Motor Control (enable bit in Motor Control)
-
-  // Release Brake
-  //    - Check if Brake is released (brake open = HIGH, brake closed = LOW)
-  //    - If (brake open = LOW AND brake closed = LOW)
-  //        -> Error
-  //    - While (brake open = LOW AND brake closed = HIGH)
-  //        -> Drive Motor to release brake
-  //    // Brake is now released
-
-  // Ready to drive
-}
-
-void disableDriveMode()
-{
-  // Engage Brake
-  //   - Check if brake is engaged (brake open = LOW, brake closed = HIGH)
-  //   - If (brake open = LOW AND brake closed = LOW)
-  //       -> Error
-  //   - Lift motor a bit
-  //   - While (brake open = HIGH AND brake closed = LOW)
-  //       -> Drive Brake Motor to engage brake
-  //   // Brake is now engaged
-
-  // Disable Motor via Motor Control (disable bit in Motor Control)
-  // Disable Motor Control (disable Relay)
-  // Disable Motor (disable Relay)
 }
