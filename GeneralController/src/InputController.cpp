@@ -550,39 +550,53 @@ void InputController::checkTransitionSwitchOnMotorControl()
 
 void InputController::checkTransitionUnlockBrakes()
 {
-    // Check if both brakes are unlocked.
-    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
-    {
-        // Brakes are unlocked, switch to drive mode state
-        gearboxState = GearboxState::DriveMode;
-        // Reset unlockingBrakeState for next time.
-        unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
-        return;
-    }
+    // // Check if both brakes are unlocked.
+    // if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
+    // {
+    //     // Brakes are unlocked, switch to drive mode state
+    //     gearboxState = GearboxState::DriveMode;
+    //     // Reset unlockingBrakeState for next time.
+    //     unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
+    //     return;
+    // }
 
-    // Check if max time for brake unlocking is reached, then switch to drive up state.
-    // TODO Does it make sense to also switch to drive up once one brake is unlocked but the other not?
-    const uint32_t currentTime = millis();
-    if (currentTime - lastUnlockTransition >= MAX_BRAKE_UNLOCKING_TIME)
-    {
-        unlockingBrakeState = UnlockingBrakeState::UnlockDriveUp;
-        isFirstRunDriveUp = true;
-        lastUnlockTransition = currentTime;
-        return;
-    }
+    // // Check if max time for brake unlocking is reached, then switch to drive up state.
+    // // TODO Does it make sense to also switch to drive up once one brake is unlocked but the other not?
+    // const uint32_t currentTime = millis();
+    // if (currentTime - lastUnlockTransition >= MAX_BRAKE_UNLOCKING_TIME)
+    // {
+    //     unlockingBrakeState = UnlockingBrakeState::UnlockDriveUp;
+    //     isFirstRunDriveUp = true;
+    //     lastUnlockTransition = currentTime;
+    //     return;
+    // }
+
+    // TODO Replace with above once the brake is used again.
+    // Assume brakes are unlocked.
+    // Brakes are unlocked, switch to drive mode state
+    gearboxState = GearboxState::DriveMode;
+    // Reset unlockingBrakeState for next time.
+    unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
 }
 
 void InputController::checkTransitionUnlockDriveUp()
 {
-    // Check if both brakes are unlocked.
-    if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
-    {
-        // Brakes are unlocked, switch to drive mode state
-        gearboxState = GearboxState::DriveMode;
-        // Reset unlockingBrakeState for next time.
-        unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
-        return;
-    }
+    // // Check if both brakes are unlocked.
+    // if (gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_UNLOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_UNLOCKED)
+    // {
+    //     // Brakes are unlocked, switch to drive mode state
+    //     gearboxState = GearboxState::DriveMode;
+    //     // Reset unlockingBrakeState for next time.
+    //     unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
+    //     return;
+    // }
+
+    // TODO Replace with above once brake is used again.
+    // Assume brakes are unlocked.
+    // Brakes are unlocked, switch to drive mode state
+    gearboxState = GearboxState::DriveMode;
+    // Reset unlockingBrakeState for next time.
+    unlockingBrakeState = UnlockingBrakeState::SwitchOnGearboxPower;
 }
 #pragma endregion UnlockingBrakes Transitions
 
@@ -656,13 +670,19 @@ void InputController::checkTransitionLockingBrakes()
 #pragma region LockingBrakes Transitions
 void InputController::checkTransitionLockBrakes()
 {
-    // Switch to next state if both brakes are locked, or the max time for locking is reached.
+    // // Switch to next state if both brakes are locked, or the max time for locking is reached.
+    // const uint32_t currentTime = millis();
+    // if ((gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_LOCKED) || (currentTime - lastLockTransition >= MAX_BRAKE_LOCKING_TIME))
+    // {
+    //     lockingBrakeState = LockingBrakeState::SwitchOffMotorControl;
+    //     lastLockTransition = currentTime;
+    // }
+
+    // TODO Replace with above once brake is used again.
+    // Assume brakes are locked
     const uint32_t currentTime = millis();
-    if ((gearbox->getBrakeStateLeft() == GearboxCommunication::BRAKE_STATE_LOCKED && gearbox->getBrakeStateRight() == GearboxCommunication::BRAKE_STATE_LOCKED) || (currentTime - lastLockTransition >= MAX_BRAKE_LOCKING_TIME))
-    {
-        lockingBrakeState = LockingBrakeState::SwitchOffMotorControl;
-        lastLockTransition = currentTime;
-    }
+    lockingBrakeState = LockingBrakeState::SwitchOffMotorControl;
+    lastLockTransition = currentTime;
 }
 
 void InputController::checkTransitionSwitchOffMotorControl()

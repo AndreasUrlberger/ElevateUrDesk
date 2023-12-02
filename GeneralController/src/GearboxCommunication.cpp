@@ -25,6 +25,7 @@ void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, c
     i2c->endTransmission();
 
     // Request a response from the gearbox.
+    // TODO: After driving the motors and then stopping, we receive this error from the general controller: [ 10253][E][Wire.cpp:513] requestFrom(): i2cRead returned Error 263
     i2c->requestFrom(address, RESPONSE_LENGTH);
 
     // Read the response.
