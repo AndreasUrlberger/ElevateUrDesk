@@ -529,6 +529,13 @@ void InputController::checkTransitionSwitchOnMotorPowerSupply()
 void InputController::checkTransitionSwitchOnMotorControlPower()
 {
     const uint32_t currentTime = millis();
+
+    if (!wasLastActionSuccessful)
+    {
+        lastUnlockTransition = currentTime;
+        return;
+    }
+
     // If given time has passed, switch to next state
     if (currentTime - lastUnlockTransition >= SWITCH_ON_MOTOR_CONTROL_POWER_TIME)
     {
@@ -540,6 +547,13 @@ void InputController::checkTransitionSwitchOnMotorControlPower()
 void InputController::checkTransitionSwitchOnMotorControl()
 {
     const uint32_t currentTime = millis();
+
+    if (!wasLastActionSuccessful)
+    {
+        lastUnlockTransition = currentTime;
+        return;
+    }
+
     // If given time has passed, switch to next state
     if (currentTime - lastUnlockTransition >= SWITCH_ON_MOTOR_CONTROL_TIME)
     {
@@ -688,6 +702,13 @@ void InputController::checkTransitionLockBrakes()
 void InputController::checkTransitionSwitchOffMotorControl()
 {
     const uint32_t currentTime = millis();
+
+    if (!wasLastActionSuccessful)
+    {
+        lastLockTransition = currentTime;
+        return;
+    }
+
     // If given time has passed, switch to next state
     if (currentTime - lastLockTransition >= SWITCH_OFF_MOTOR_CONTROL_TIME)
     {
@@ -699,6 +720,13 @@ void InputController::checkTransitionSwitchOffMotorControl()
 void InputController::checkTransitionSwitchOffMotorControlPower()
 {
     const uint32_t currentTime = millis();
+
+    if (!wasLastActionSuccessful)
+    {
+        lastLockTransition = currentTime;
+        return;
+    }
+
     // If given time has passed, switch to next state
     if (currentTime - lastLockTransition >= SWITCH_OFF_MOTOR_CONTROL_POWER_TIME)
     {
@@ -889,12 +917,12 @@ void InputController::performSwitchOnMotorPowerSupply()
 
 void InputController::performSwitchOnMotorControlPower()
 {
-    gearbox->toggleMotorControlPower(true);
+    wasLastActionSuccessful = gearbox->toggleMotorControlPower(true);
 }
 
 void InputController::performSwitchOnMotorControl()
 {
-    gearbox->toggleMotorControl(true);
+    wasLastActionSuccessful = gearbox->toggleMotorControl(true);
 }
 
 void InputController::performUnlockBrakes()
@@ -928,12 +956,12 @@ void InputController::performLockBrakes()
 
 void InputController::performSwitchOffMotorControl()
 {
-    gearbox->toggleMotorControl(false);
+    wasLastActionSuccessful = gearbox->toggleMotorControl(false);
 }
 
 void InputController::performSwitchOffMotorControlPower()
 {
-    gearbox->toggleMotorControlPower(false);
+    wasLastActionSuccessful = gearbox->toggleMotorControlPower(false);
 }
 
 void InputController::performSwitchOffMotorPowerSupply()

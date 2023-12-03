@@ -78,6 +78,9 @@ private:
         SwitchOffGearboxPower
     };
 
+    // Tells weather the last action was successful or not, used for example for toggling motor control.
+    bool wasLastActionSuccessful{true};
+
     // Gearbox Unlocking Drive Up
     bool isFirstRunDriveUp{true};
     uint32_t startPositionDriveUp{0u};

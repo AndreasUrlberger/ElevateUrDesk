@@ -26,7 +26,7 @@ private:
     uint8_t brakeStateLeft{BRAKE_STATE_LOCKED};
     uint8_t brakeStateRight{BRAKE_STATE_LOCKED};
 
-    void sendCommand(uint8_t *data, const size_t dataLength, const bool isLeftGearbox);
+    bool sendCommand(uint8_t *data, const size_t dataLength, const bool isLeftGearbox);
     void processResponse(const uint8_t *const response, const bool isLeftGearbox);
 
 public:
@@ -45,8 +45,8 @@ public:
     void getPosition();
     void loosenBrake();
     void fastenBrake();
-    void toggleMotorControl(const bool enable);
-    void toggleMotorControlPower(const bool enable);
+    bool toggleMotorControl(const bool enable);
+    bool toggleMotorControlPower(const bool enable);
 
     uint32_t getPositionLeft() const { return positionLeft; };
     uint32_t getPositionRight() const { return positionRight; };

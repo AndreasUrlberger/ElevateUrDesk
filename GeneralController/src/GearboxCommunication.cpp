@@ -10,7 +10,7 @@ GearboxCommunication::GearboxCommunication(const uint8_t gearboxLeftAddress, con
     Serial.println(i2cSuccess ? "true" : "false");
 }
 
-void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, const bool isLeftGearbox)
+bool GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, const bool isLeftGearbox)
 {
     constexpr size_t RESPONSE_LENGTH{5u};
     const uint8_t address = isLeftGearbox ? addressLeft : addressRight;
@@ -26,7 +26,13 @@ void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, c
 
     // Request a response from the gearbox.
     // TODO: After driving the motors and then stopping, we receive this error from the general controller: [ 10253][E][Wire.cpp:513] requestFrom(): i2cRead returned Error 263
-    i2c->requestFrom(address, RESPONSE_LENGTH);
+    uint8_t readCount = i2c->requestFrom(address, RESPONSE_LENGTH);
+
+    if (readCount != RESPONSE_LENGTH)
+    {
+        // Failed sending command.
+        return false;
+    }
 
     // Read the response.
     size_t bytesRead{0u};
@@ -40,6 +46,7 @@ void GearboxCommunication::sendCommand(uint8_t *data, const size_t dataLength, c
     }
 
     processResponse(response, isLeftGearbox);
+    return true;
 }
 
 void GearboxCommunication::processResponse(const uint8_t *const response, const bool isLeftGearbox)
@@ -208,12 +215,13 @@ void GearboxCommunication::fastenBrake()
     sendCommand(data, DATA_LENGTH, false);
 }
 
-void GearboxCommunication::toggleMotorControl(const bool enable)
+bool GearboxCommunication::toggleMotorControl(const bool enable)
 {
     constexpr size_t DATA_LENGTH{6u};
     // Save last position such that both gearboxes get the position from roughly the same time.
     const uint32_t lastPositionRight{positionRight};
     const uint32_t lastPositionLeft{positionLeft};
+    bool success{true};
 
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
@@ -224,19 +232,22 @@ void GearboxCommunication::toggleMotorControl(const bool enable)
     // Left
     // Set last 4 bytes to position of right gearbox
     *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
-    sendCommand(data, DATA_LENGTH, true);
+    success &= sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
     *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
-    sendCommand(data, DATA_LENGTH, false);
+    success &= sendCommand(data, DATA_LENGTH, false);
+
+    return success;
 }
 
-void GearboxCommunication::toggleMotorControlPower(const bool enable)
+bool GearboxCommunication::toggleMotorControlPower(const bool enable)
 {
     constexpr size_t DATA_LENGTH{6u};
     // Save last position such that both gearboxes get the position from roughly the same time.
     const uint32_t lastPositionRight{positionRight};
     const uint32_t lastPositionLeft{positionLeft};
+    bool success{true};
 
     uint8_t data[DATA_LENGTH] = {0u};
     // Set first byte to command code
@@ -247,9 +258,11 @@ void GearboxCommunication::toggleMotorControlPower(const bool enable)
     // Left
     // Set last 4 bytes to position of right gearbox
     *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionRight;
-    sendCommand(data, DATA_LENGTH, true);
+    success &= sendCommand(data, DATA_LENGTH, true);
     // Right
     // Set last 4 bytes to position of left gearbox
     *reinterpret_cast<uint32_t *>(&(data[1u])) = lastPositionLeft;
-    sendCommand(data, DATA_LENGTH, false);
+    success &= sendCommand(data, DATA_LENGTH, false);
+
+    return success;
 }
